@@ -82,11 +82,13 @@
   //  «Рисунок N.M — Название» под рисунком, по центру, 12 пт
   // -----------------------------------------------------------
   
+  // Каждый раздел — с новой страницы (weak: без пустых страниц)
   show heading.where(level: 1): it => {
-  counter(figure.where(kind: image)).update(0)
-  counter(figure.where(kind: table)).update(0)
-  it
-}
+    pagebreak(weak: true)
+    counter(figure.where(kind: image)).update(0)
+    counter(figure.where(kind: table)).update(0)
+    it
+  }
 
   show figure.where(kind: image): it => {
     let chapter = counter(heading).get().at(0)

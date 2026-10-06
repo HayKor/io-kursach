@@ -1,15 +1,8 @@
-#import "include/settings.typ": *
+#import "include/report.typ": *
 
-#set document(
-  title:  "Система учёта дисциплинарных взысканий и замечаний",
-  author: "Багинян Артур Варданович",
-  date:   datetime(year: 2026, month: 9, day: 22),
-)
-
-#show: apply-gost
-
-// Содержание
-#contents()
+#show: report
 
 #include "chapters/01_general.typ"
 #include "chapters/02_structure.typ"
+#include "chapters/03_aris_models.typ"
+#include "chapters/04_eepc.typ"
