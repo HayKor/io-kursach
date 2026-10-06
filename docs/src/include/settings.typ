@@ -268,3 +268,16 @@
 #let unnumbered-section(title) = {
   heading(numbering: none)[#upper(title)]
 }
+
+
+// -------------------------------------------------------------
+//  Схема (PDF/SVG из draw.io), вписанная в ширину текста
+//  и не выше max-height. Путь — от корня src/: "/img/....pdf"
+//  Широкие схемы ставятся на альбомную страницу:
+//    #page(flipped: true)[#figure(diagram(...), caption: [...])]
+// -------------------------------------------------------------
+#let diagram(path, max-height: 225mm) = layout(size => {
+  let natural = measure(image(path))
+  let k = calc.min(size.width / natural.width, max-height / natural.height)
+  image(path, width: natural.width * k)
+})
