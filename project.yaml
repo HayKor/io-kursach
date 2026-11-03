@@ -1,0 +1,5 @@
+modules:
+  - android-app
+  - server
+  - shared/domain
+  - shared/contract

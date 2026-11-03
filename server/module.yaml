@@ -1,0 +1,43 @@
+product: jvm/app
+
+apply:
+  - ../common.module-template.yaml
+
+dependencies:
+  - ../shared/domain
+  - ../shared/contract
+  - $libs.metro.runtime
+  # HTTP
+  - $libs.ktor.server.core
+  - $libs.ktor.server.netty
+  - $libs.ktor.server.config.yaml
+  - $libs.ktor.server.contentNegotiation
+  - $libs.ktor.serialization.kotlinx.json
+  - $libs.ktor.server.statusPages
+  - $libs.ktor.server.callLogging
+  - $libs.ktor.server.requestValidation
+  - $libs.ktor.server.auth
+  - $libs.ktor.server.auth.jwt
+  - $libs.logback.classic
+  # БД
+  - $libs.exposed.core
+  - $libs.exposed.r2dbc
+  - $libs.exposed.kotlin.datetime
+  - $libs.r2dbc.postgresql
+  - $libs.r2dbc.pool
+
+test-dependencies:
+  - $libs.ktor.server.testHost
+  - $libs.ktor.client.contentNegotiation
+
+settings:
+  ktor:
+    enabled: true
+    # версии Ktor задаются в libs.versions.toml
+    applyBom: false
+  kotlin:
+    compilerPlugins:
+      - id: dev.zacsweers.metro.compiler
+        dependency: $libs.metro.compiler
+  jvm:
+    mainClass: ru.haykor.sudv.MainKt

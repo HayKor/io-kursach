@@ -1,0 +1,42 @@
+product: android/app
+
+apply:
+  - ../common.module-template.yaml
+
+dependencies:
+  - ../shared/domain
+  - ../shared/contract
+  - $libs.metro.runtime
+  # UI
+  - $libs.androidx.activity.compose
+  - $compose.foundation
+  - $compose.material3
+  - $compose.preview
+  - $compose.uiTooling: runtime-only
+  - $libs.decompose
+  - $libs.decompose.extensions.compose
+  # Клиент API
+  - $libs.ktor.client.core
+  - $libs.ktor.client.okhttp
+  - $libs.ktor.client.contentNegotiation
+  - $libs.ktor.serialization.kotlinx.json
+
+settings:
+  compose: enabled
+  junit: junit-4
+  kotlin:
+    serialization: enabled
+    compilerPlugins:
+      - id: dev.zacsweers.metro.compiler
+        dependency: $libs.metro.compiler
+  android:
+    namespace: ru.haykor.sudv
+    applicationId: ru.haykor.sudv
+    versionCode: 1
+    versionName: "1.0"
+    minSdk: 28
+    compileSdk: 37
+    targetSdk: 37
+    resourcePackaging:
+      excludes:
+        - /META-INF/{AL2.0,LGPL2.1}

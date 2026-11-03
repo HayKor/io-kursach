@@ -1,0 +1,11 @@
+ktor:
+    application:
+        modules:
+            - ru.haykor.sudv.MainKt.module
+    deployment:
+        port: 8080
+
+database:
+    url: "$DB_URL:r2dbc:pool:postgresql://localhost:5432/sudv"
+    user: "$DB_USER:sudv"
+    password: "$DB_PASSWORD:sudv"
