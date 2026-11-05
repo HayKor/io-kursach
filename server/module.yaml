@@ -17,6 +17,7 @@ dependencies:
   - $libs.ktor.server.requestValidation
   - $libs.ktor.server.auth
   - $libs.ktor.server.auth.jwt
+  - $libs.ktor.server.swagger
   - $libs.logback.classic
   - $libs.exposed.core
   - $libs.exposed.r2dbc
@@ -37,5 +38,11 @@ settings:
     compilerPlugins:
       - id: dev.zacsweers.metro.compiler
         dependency: $libs.metro.compiler
+      # infers OpenAPI paths and schemas from routing code (call.receive / call.respond)
+      - id: io.ktor.ktor-compiler-plugin
+        dependency: $libs.ktor.compiler.plugin
+        options:
+          openApiEnabled: true
+          openApiCodeInference: true
   jvm:
     mainClass: ru.haykor.sudv.MainKt

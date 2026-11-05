@@ -33,6 +33,8 @@ ktor-server-callLogging = { module = "io.ktor:ktor-server-call-logging", version
 ktor-server-requestValidation = { module = "io.ktor:ktor-server-request-validation", version.ref = "ktor" }
 ktor-server-auth = { module = "io.ktor:ktor-server-auth", version.ref = "ktor" }
 ktor-server-auth-jwt = { module = "io.ktor:ktor-server-auth-jwt", version.ref = "ktor" }
+ktor-server-swagger = { module = "io.ktor:ktor-server-swagger", version.ref = "ktor" }
+ktor-compiler-plugin = { module = "io.ktor:ktor-compiler-plugin", version.ref = "ktor" }
 ktor-server-testHost = { module = "io.ktor:ktor-server-test-host", version.ref = "ktor" }
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 

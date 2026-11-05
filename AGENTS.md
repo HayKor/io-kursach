@@ -94,11 +94,18 @@ make dev-destroy   # остановить и удалить данные БД
 | Модуль | Библиотеки |
 |---|---|
 | `android-app` | Compose + Material 3 (Expressive), Decompose (навигация и компоненты), Metro (DI), Ktor client (OkHttp + kotlinx-json), kotlinx-serialization |
-| `server` | Ktor server (Netty, YAML-конфиг, content negotiation, status pages, call logging, request validation, auth + JWT), Exposed **через R2DBC** (`exposed-r2dbc`, `r2dbc-postgresql`, `r2dbc-pool`), `exposed-kotlin-datetime`, Metro, logback |
+| `server` | Ktor server (Netty, YAML-конфиг, content negotiation, status pages, call logging, request validation, auth + JWT, Swagger UI + OpenAPI), Exposed **через R2DBC** (`exposed-r2dbc`, `r2dbc-postgresql`, `r2dbc-pool`), `exposed-kotlin-datetime`, Metro, logback |
 | `shared:contract` | `shared:domain`, kotlinx-serialization-json, kotlinx-datetime (все экспортируются) |
 | `shared:domain` | только `kotlinx-serialization-core` (аннотация `@Serializable` на id) |
 
 Версии — только в `libs.versions.toml`, в `module.yaml` ссылки вида `$libs.xxx`. Исключение — Compose: используется встроенный каталог `$compose.*`, потому что его версия привязана к настройке `compose` toolchain. У Ktor `applyBom: false`, чтобы версию задавал только каталог.
+
+### OpenAPI / Swagger
+
+- Swagger UI: `http://localhost:8080/docs`, спецификация: `/docs/documentation.yaml` (отдаётся в JSON). Настройка в `server/src/Swagger.kt`.
+- Пути, методы и схемы выводит **плагин компилятора Ktor** (`io.ktor.ktor-compiler-plugin`, опции `openApiEnabled`, `openApiCodeInference`) по коду маршрутов: `call.receive<T>()` / `call.respond<T>()`. В toolchain нет встроенной настройки — плагин подключён вручную в `server/module.yaml` через `compilerPlugins`, как Metro.
+- Если вывода не хватает, маршрут дополняется `.describe { … }` (экспериментальное API, `@OptIn(ExperimentalKtorApi::class)`).
+- `SwaggerTest` проверяет, что маршруты попадают в спецификацию: если плагин перестанет срабатывать, тест упадёт.
 
 ### Архитектурные правила
 
@@ -114,7 +121,7 @@ make dev-destroy   # остановить и удалить данные БД
 
 ### Текущее состояние
 
-Пока это каркас: стек подключён и проверен (сборка, тесты, запуск на эмуляторе, запрос к PostgreSQL), контракт API описан в `shared:contract`, но предметной логики нет. На сервере есть только `GET /health` (отвечает `OK`).
+Пока это каркас: стек подключён и проверен (сборка, тесты, запуск на эмуляторе, запрос к PostgreSQL), контракт API описан в `shared:contract`, но предметной логики нет. На сервере есть только `GET /health` (отвечает `OK`) и Swagger UI на `/docs`.
 
 Что предстоит реализовать (по отчёту, гл. 06–07): компоненты сервера «Веб-API» (`ISudvApi`), «Управление доступом» (`IAuthService`, JWT), «Учёт сотрудников и нарушений» (`IRecordService`), «Отчётность» (`IReportService`), «Контроль сроков» (`IExpiryService`) с планировщиком, «Хранилище файлов» (`IFileStorage`), «Доступ к данным» (репозитории `I*Repository`); на Android — «Клиент API» (`IApiClient`, хранение токена) и экраны; миграции схемы БД; compose-файл для боевого развёртывания (по отчёту: контейнеры JVM 21 и PostgreSQL 16, том `/srv/sudv/files`). Локальный compose уже есть в `deployment/`.
 

@@ -13,4 +13,5 @@ fun Application.module() {
         json()
     }
     configureRouting()
+    configureSwagger()
 }
