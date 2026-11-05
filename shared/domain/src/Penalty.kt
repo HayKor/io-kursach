@@ -1,4 +1,4 @@
-package ru.haykor.sudv
+package ru.haykor.sudv.domain
 
 enum class PenaltyType {
     REMARK,

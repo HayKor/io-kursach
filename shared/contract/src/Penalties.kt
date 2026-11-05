@@ -1,7 +1,13 @@
-package ru.haykor.sudv
+package ru.haykor.sudv.contract
 
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.Serializable
+import ru.haykor.sudv.domain.AttachmentId
+import ru.haykor.sudv.domain.DepartmentId
+import ru.haykor.sudv.domain.EmployeeId
+import ru.haykor.sudv.domain.PenaltyId
+import ru.haykor.sudv.domain.PenaltyStatus
+import ru.haykor.sudv.domain.PenaltyType
 import kotlin.time.Instant
 
 @Serializable

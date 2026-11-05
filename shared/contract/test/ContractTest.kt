@@ -1,7 +1,13 @@
-package ru.haykor.sudv
+package ru.haykor.sudv.contract
 
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.json.Json
+import ru.haykor.sudv.domain.DepartmentId
+import ru.haykor.sudv.domain.EmployeeId
+import ru.haykor.sudv.domain.PenaltyId
+import ru.haykor.sudv.domain.PenaltyStatus
+import ru.haykor.sudv.domain.PenaltyType
+import ru.haykor.sudv.domain.ReportFormat
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

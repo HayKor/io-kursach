@@ -1,4 +1,4 @@
-package ru.haykor.sudv
+package ru.haykor.sudv.domain
 
 import kotlinx.serialization.Serializable
 import kotlin.jvm.JvmInline

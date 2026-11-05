@@ -1,5 +1,10 @@
-package ru.haykor.sudv
+package ru.haykor.sudv.contract
 
+import ru.haykor.sudv.domain.AttachmentId
+import ru.haykor.sudv.domain.EmployeeId
+import ru.haykor.sudv.domain.PenaltyId
+import ru.haykor.sudv.domain.ReportId
+import ru.haykor.sudv.domain.UserId
 
 /**
  * Constants with `{id}` are route templates for the server, functions build concrete paths for the client.

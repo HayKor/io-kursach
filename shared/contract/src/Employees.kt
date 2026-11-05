@@ -1,6 +1,8 @@
-package ru.haykor.sudv
+package ru.haykor.sudv.contract
 
 import kotlinx.serialization.Serializable
+import ru.haykor.sudv.domain.DepartmentId
+import ru.haykor.sudv.domain.EmployeeId
 
 @Serializable
 data class DepartmentDto(
