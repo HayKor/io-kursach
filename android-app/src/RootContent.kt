@@ -25,8 +25,7 @@ fun MainScreen(modifier: Modifier = Modifier) {
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,
     ) {
-        val model = Model(id = 1, name = "Arthur")
-        Text(text = "Hello, $model!")
+        Text(text = "СУДВ")
     }
 }
 

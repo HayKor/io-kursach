@@ -103,14 +103,14 @@ make dev-destroy   # остановить и удалить данные БД
 - Контракт API — `shared:contract`: адреса в `ApiRoutes` (шаблоны `{id}` для сервера, функции для клиента), имена параметров в `ApiParams`, ошибки — `ErrorResponse` + `ErrorCode` (с HTTP-статусом). Даты — `kotlinx.datetime.LocalDate`, моменты времени — `kotlin.time.Instant`, оба в JSON как ISO-строки. Ответы — `*Dto`, тела запросов — `*Request`.
 - Клиент и сервер общаются только через REST/JSON API, описанное в `shared:contract`.
 - Правила предметной области (статусы, переходы, сроки, валидация) пишутся один раз, в `shared:domain`.
-- DI на обеих сторонах — **Metro** (плагин компилятора, граф проверяется при компиляции). Граф — `AppGraph`: на сервере создаётся в `Application.module()`, на Android хранится в `SudvApplication.graph`.
+- DI на обеих сторонах — **Metro** (плагин компилятора, граф проверяется при компиляции). Граф — `AppGraph`: на сервере его надо создавать в `Application.module()` через `createGraphFactory<AppGraph.Factory>().create(environment.config)` (пока не создаётся — нет сервисов, которым он нужен), на Android он хранится в `SudvApplication.graph`.
 - БД: только Exposed **DSL** (не DAO — `exposed-dao-r2dbc` экспериментальный), все запросы внутри `suspendTransaction { }`. Блокирующий `transaction { }` — это JDBC, не использовать.
 - Room на Android **не используется**: от него отказались намеренно.
 - Навигация на Android — Decompose: `RootComponent` / `DefaultRootComponent`, конфигурации экранов — `@Serializable`.
 
 ### Текущее состояние
 
-Пока это каркас: стек подключён и проверен (сборка, тест, запуск на эмуляторе, запрос к PostgreSQL), но предметной логики нет. `Model`, `ModelDto`, `ModelTable`, `ModelRepository`, маршрут `/models` — заглушки, их нужно заменить реальными сущностями (`Employee`, `Penalty`, …).
+Пока это каркас: стек подключён и проверен (сборка, тесты, запуск на эмуляторе, запрос к PostgreSQL), контракт API описан в `shared:contract`, но предметной логики нет. На сервере есть только `GET /health` (отвечает `OK`).
 
 Что предстоит реализовать (по отчёту, гл. 06–07): компоненты сервера «Веб-API» (`ISudvApi`), «Управление доступом» (`IAuthService`, JWT), «Учёт сотрудников и нарушений» (`IRecordService`), «Отчётность» (`IReportService`), «Контроль сроков» (`IExpiryService`) с планировщиком, «Хранилище файлов» (`IFileStorage`), «Доступ к данным» (репозитории `I*Repository`); на Android — «Клиент API» (`IApiClient`, хранение токена) и экраны; миграции схемы БД; compose-файл для боевого развёртывания (по отчёту: контейнеры JVM 21 и PostgreSQL 16, том `/srv/sudv/files`). Локальный compose уже есть в `deployment/`.
 

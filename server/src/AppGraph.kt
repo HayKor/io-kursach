@@ -10,7 +10,7 @@ import org.jetbrains.exposed.v1.r2dbc.R2dbcDatabase
 
 @DependencyGraph(AppScope::class)
 interface AppGraph {
-    val modelRepository: ModelRepository
+    val database: R2dbcDatabase
 
     @Provides
     @SingleIn(AppScope::class)
