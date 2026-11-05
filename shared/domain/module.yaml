@@ -2,6 +2,13 @@ product:
   type: kmp/lib
   platforms: [ jvm, android ]
 
+dependencies:
+  - $libs.kotlinx.datetime: exported
+
+test-dependencies:
+  - $kotlin.test
+  - $kotlin.test.junit5
+
 apply:
   - ../../common.module-template.yaml
 
