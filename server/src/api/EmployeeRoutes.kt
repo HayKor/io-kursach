@@ -25,7 +25,8 @@ fun Route.configureEmployeeRoutes(recordService: IRecordService) {
         call.respond(recordService.findEmployees(actor, query, departmentId, includeArchived))
     }
     post(ApiRoutes.EMPLOYEES) {
-        call.requireRole(UserRole.HR)
+        // ADMIN too: an account needs an employee, so the first HR account would otherwise be impossible to create.
+        call.requireRole(UserRole.ADMIN, UserRole.HR)
         val request = call.receive<EmployeeRequest>()
         call.respond(HttpStatusCode.Created, recordService.createEmployee(request))
     }

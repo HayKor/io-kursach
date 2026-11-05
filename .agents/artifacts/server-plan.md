@@ -39,7 +39,8 @@
 | Учётные записи: список, создание, блокировка | ✔ | — | — |
 | Подразделения: список | ✔ | ✔ | ✔ |
 | Сотрудники: просмотр | ✔ | ✔ | своё подр. |
-| Сотрудники: создание, редактирование, архив | — | ✔ | — |
+| Сотрудники: создание | ✔ | ✔ | — |
+| Сотрудники: редактирование, архив | — | ✔ | — |
 | Реестр, карточка взыскания, экспорт реестра | — | ✔ | своё подр. |
 | Регистрация взыскания, досрочное снятие | — | ✔ | — |
 | Вложения: загрузка, удаление | — | ✔ | — |
@@ -461,7 +462,7 @@ interface IFileStorage {
 | `POST USER_BLOCK` / `USER_UNBLOCK` | ADMIN | → `UserDto` | NOT_FOUND, VALIDATION_FAILED |
 | `GET DEPARTMENTS` | все | → `List<DepartmentDto>` | |
 | `GET EMPLOYEES` | все | query: `QUERY`, `DEPARTMENT_ID`, `INCLUDE_ARCHIVED` → `List<EmployeeDto>` | FORBIDDEN |
-| `POST EMPLOYEES` | HR | `EmployeeRequest` → `201 EmployeeDto` | VALIDATION_FAILED, DUPLICATE_PERSONNEL_NUMBER |
+| `POST EMPLOYEES` | ADMIN, HR | `EmployeeRequest` → `201 EmployeeDto` | VALIDATION_FAILED, DUPLICATE_PERSONNEL_NUMBER |
 | `GET EMPLOYEE` | все | → `EmployeeDto` | NOT_FOUND, FORBIDDEN |
 | `PUT EMPLOYEE` | HR | `EmployeeRequest` → `EmployeeDto` | NOT_FOUND, VALIDATION_FAILED, DUPLICATE_PERSONNEL_NUMBER |
 | `POST EMPLOYEE_ARCHIVE` | HR | → `EmployeeDto` | NOT_FOUND |

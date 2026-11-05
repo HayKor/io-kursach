@@ -58,6 +58,37 @@ class EmployeeTest {
     }
 
     @Test
+    fun adminCanCreateFirstHrEmployeeButNotEditOrArchive() = apiTest {
+        val admin = adminToken()
+        val departmentId = departmentId("Отдел кадров")
+
+        val created = api().post(ApiRoutes.EMPLOYEES) {
+            bearer(admin)
+            contentType(ContentType.Application.Json)
+            setBody(EmployeeRequest("HR-1", "Кадрова", "Анна", null, "Специалист по кадрам", departmentId))
+        }
+        assertEquals(HttpStatusCode.Created, created.status)
+        val employee = created.body<EmployeeDto>()
+
+        val user = api().post(ApiRoutes.USERS) {
+            bearer(admin)
+            contentType(ContentType.Application.Json)
+            setBody(CreateUserRequest("first-hr", "password123", UserRole.HR, employee.id))
+        }
+        assertEquals(HttpStatusCode.Created, user.status)
+        val hr = login("first-hr", "password123")
+        assertEquals(HttpStatusCode.OK, api().get(ApiRoutes.PENALTIES) { bearer(hr) }.status)
+
+        val update = api().put(ApiRoutes.employee(employee.id)) {
+            bearer(admin)
+            contentType(ContentType.Application.Json)
+            setBody(EmployeeRequest("HR-1", "Кадрова", "Анна", null, "Начальник отдела кадров", departmentId))
+        }
+        assertEquals(HttpStatusCode.Forbidden, update.status)
+        assertEquals(HttpStatusCode.Forbidden, api().post(ApiRoutes.employeeArchive(employee.id)) { bearer(admin) }.status)
+    }
+
+    @Test
     fun archivedEmployeeIsHiddenByDefaultAndVisibleWithIncludeArchived() = apiTest {
         val hr = createUser(UserRole.HR)
         val employeeId = createEmployee(personnelNumber = "ARCH-1")
