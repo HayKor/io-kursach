@@ -1,20 +1,17 @@
 package ru.haykor.sudv
 
+
 /**
- * Адреса методов API.
- *
- * Константы с `{id}` — шаблоны для объявления маршрутов на сервере,
- * функции с параметром — готовые адреса для запросов клиента.
- * Все методы, кроме [LOGIN], требуют заголовок `Authorization: Bearer <token>`.
+ * Constants with `{id}` are route templates for the server, functions build concrete paths for the client.
+ * Every route except [LOGIN] requires the `Authorization: Bearer <token>` header.
  */
 object ApiRoutes {
-    /** Имя параметра пути с идентификатором. */
     const val ID = "id"
 
     /** `POST` [LoginRequest] → [LoginResponse]. */
     const val LOGIN = "/api/auth/login"
 
-    /** `GET` → список [UserDto]; `POST` [CreateUserRequest] → [UserDto]. */
+    /** `GET` → list of [UserDto]; `POST` [CreateUserRequest] → [UserDto]. */
     const val USERS = "/api/users"
 
     /** `POST` → [UserDto]. */
@@ -23,10 +20,10 @@ object ApiRoutes {
     /** `POST` → [UserDto]. */
     const val USER_UNBLOCK = "/api/users/{id}/unblock"
 
-    /** `GET` → список [DepartmentDto]. */
+    /** `GET` → list of [DepartmentDto]. */
     const val DEPARTMENTS = "/api/departments"
 
-    /** `GET` (параметры [ApiParams.QUERY], [ApiParams.DEPARTMENT_ID], [ApiParams.INCLUDE_ARCHIVED]) → список [EmployeeDto]; `POST` [EmployeeRequest] → [EmployeeDto]. */
+    /** `GET` ([ApiParams.QUERY], [ApiParams.DEPARTMENT_ID], [ApiParams.INCLUDE_ARCHIVED]) → list of [EmployeeDto]; `POST` [EmployeeRequest] → [EmployeeDto]. */
     const val EMPLOYEES = "/api/employees"
 
     /** `GET` → [EmployeeDto]; `PUT` [EmployeeRequest] → [EmployeeDto]. */
@@ -35,37 +32,37 @@ object ApiRoutes {
     /** `POST` → [EmployeeDto]. */
     const val EMPLOYEE_ARCHIVE = "/api/employees/{id}/archive"
 
-    /** `GET` → [EmployeeCardDto] — персональная карточка нарушений. */
+    /** `GET` → [EmployeeCardDto]. */
     const val EMPLOYEE_CARD = "/api/employees/{id}/card"
 
-    /** `GET` (параметр [ApiParams.FORMAT]) → файл карточки. */
+    /** `GET` ([ApiParams.FORMAT]) → card file. */
     const val EMPLOYEE_CARD_EXPORT = "/api/employees/{id}/card/export"
 
-    /** `GET` (параметры [PenaltyFilter]) → список [PenaltyDto]; `POST` [CreatePenaltyRequest] → [PenaltyDto]. */
+    /** `GET` ([PenaltyFilter]) → list of [PenaltyDto]; `POST` [CreatePenaltyRequest] → [PenaltyDto]. */
     const val PENALTIES = "/api/penalties"
 
-    /** `GET` (параметры [PenaltyFilter] и [ApiParams.FORMAT]) → файл реестра. */
+    /** `GET` ([PenaltyFilter], [ApiParams.FORMAT]) → registry file. */
     const val PENALTIES_EXPORT = "/api/penalties/export"
 
     /** `GET` → [PenaltyDetailsDto]. */
     const val PENALTY = "/api/penalties/{id}"
 
-    /** `POST` [PenaltyRemovalDto] → [PenaltyDto] — досрочное снятие. */
+    /** `POST` [PenaltyRemovalDto] → [PenaltyDto]. */
     const val PENALTY_REMOVAL = "/api/penalties/{id}/removal"
 
-    /** `POST` multipart с частью [ApiParams.FILE] → [AttachmentDto]. */
+    /** `POST` multipart with part [ApiParams.FILE] → [AttachmentDto]. */
     const val PENALTY_ATTACHMENTS = "/api/penalties/{id}/attachments"
 
-    /** `GET` → файл вложения; `DELETE` → 204. */
+    /** `GET` → attachment file; `DELETE` → 204. */
     const val ATTACHMENT = "/api/attachments/{id}"
 
-    /** `GET` (параметры [ApiParams.PERIOD_FROM], [ApiParams.PERIOD_TO], [ApiParams.DEPARTMENT_ID]) → [SummaryReportDto] — предпросмотр без сохранения. */
+    /** `GET` ([ApiParams.PERIOD_FROM], [ApiParams.PERIOD_TO], [ApiParams.DEPARTMENT_ID]) → [SummaryReportDto], not saved to the archive. */
     const val REPORTS_SUMMARY = "/api/reports/summary"
 
-    /** `GET` → список [ReportDto] (архив); `POST` [CreateReportRequest] → [ReportDto]. */
+    /** `GET` → list of archived [ReportDto]; `POST` [CreateReportRequest] → [ReportDto]. */
     const val REPORTS = "/api/reports"
 
-    /** `GET` → файл отчёта из архива. */
+    /** `GET` → archived report file. */
     const val REPORT_FILE = "/api/reports/{id}/file"
 
     fun userBlock(id: UserId) = USER_BLOCK.withId(id.value)
@@ -83,18 +80,17 @@ object ApiRoutes {
     private fun String.withId(id: Long) = replace("{$ID}", id.toString())
 }
 
-/** Имена query-параметров и частей multipart-запросов. */
+/** Query parameter and multipart part names. */
 object ApiParams {
-    /** Формат экспорта, значение [ReportFormat]. */
     const val FORMAT = "format"
 
-    /** Поиск сотрудника по ФИО или табельному номеру. */
+    /** Matches full name or personnel number. */
     const val QUERY = "query"
 
-    /** Подразделение. В [ApiRoutes.REPORTS_SUMMARY] повторяется для каждого выбранного подразделения. */
+    /** Repeated once per department in [ApiRoutes.REPORTS_SUMMARY]. */
     const val DEPARTMENT_ID = "departmentId"
 
-    /** Показывать архивных сотрудников, по умолчанию `false`. */
+    /** Defaults to `false`. */
     const val INCLUDE_ARCHIVED = "includeArchived"
 
     const val STATUS = "status"
@@ -107,6 +103,5 @@ object ApiParams {
     const val PERIOD_FROM = "periodFrom"
     const val PERIOD_TO = "periodTo"
 
-    /** Часть multipart-запроса с файлом вложения. */
     const val FILE = "file"
 }

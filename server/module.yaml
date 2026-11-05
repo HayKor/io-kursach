@@ -7,7 +7,6 @@ dependencies:
   - ../shared/domain
   - ../shared/contract
   - $libs.metro.runtime
-  # HTTP
   - $libs.ktor.server.core
   - $libs.ktor.server.netty
   - $libs.ktor.server.config.yaml
@@ -19,7 +18,6 @@ dependencies:
   - $libs.ktor.server.auth
   - $libs.ktor.server.auth.jwt
   - $libs.logback.classic
-  # БД
   - $libs.exposed.core
   - $libs.exposed.r2dbc
   - $libs.exposed.kotlin.datetime
@@ -33,7 +31,7 @@ test-dependencies:
 settings:
   ktor:
     enabled: true
-    # версии Ktor задаются в libs.versions.toml
+    # Ktor versions come from libs.versions.toml
     applyBom: false
   kotlin:
     compilerPlugins:

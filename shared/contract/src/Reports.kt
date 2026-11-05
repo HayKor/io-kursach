@@ -4,14 +4,13 @@ import kotlinx.datetime.LocalDate
 import kotlinx.serialization.Serializable
 import kotlin.time.Instant
 
-/** Персональная карточка нарушений: взыскания сотрудника в хронологическом порядке. */
+/** [penalties] are in chronological order. */
 @Serializable
 data class EmployeeCardDto(
     val employee: EmployeeDto,
     val penalties: List<PenaltyDto>,
 )
 
-/** Сводный отчёт по подразделениям за период. */
 @Serializable
 data class SummaryReportDto(
     val periodFrom: LocalDate,
@@ -28,7 +27,7 @@ data class SummaryRowDto(
     val totalCount: Int get() = remarkCount + reprimandCount
 }
 
-/** Формирование сводного отчёта с сохранением в архив. */
+/** Generates the summary report file and saves it to the archive. */
 @Serializable
 data class CreateReportRequest(
     val periodFrom: LocalDate,
@@ -37,7 +36,6 @@ data class CreateReportRequest(
     val format: ReportFormat,
 )
 
-/** Отчёт из архива с параметрами формирования. */
 @Serializable
 data class ReportDto(
     val id: ReportId,

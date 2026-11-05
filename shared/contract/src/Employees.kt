@@ -20,7 +20,6 @@ data class EmployeeDto(
     val isArchived: Boolean,
 )
 
-/** Краткие сведения о сотруднике внутри других объектов (взыскание, учётная запись). */
 @Serializable
 data class EmployeeShortDto(
     val id: EmployeeId,
@@ -31,7 +30,7 @@ data class EmployeeShortDto(
     val department: DepartmentDto,
 )
 
-/** Создание и редактирование сотрудника. */
+/** Used for both creating and updating an employee. */
 @Serializable
 data class EmployeeRequest(
     val personnelNumber: String,

@@ -1,11 +1,11 @@
 # syntax=docker/dockerfile:1
-# Образ серверного приложения СУДВ. Контекст сборки — корень репозитория:
+# Build context is the repository root:
 #   docker build -f deployment/Dockerfile -t sudv-server .
 
 FROM eclipse-temurin:21-jdk-noble AS build
 WORKDIR /src
 COPY . .
-# кэш toolchain (CLI, JDK, зависимости Maven) переживает пересборки образа
+# keeps the toolchain cache (CLI, JDK, Maven deps) between image builds
 RUN --mount=type=cache,target=/root/.cache/JetBrains/Kotlin \
     ./kotlin package -m server -f executable-jar \
  && cp build/tasks/_server_executableJarJvm/server-jvm-executable.jar /sudv-server.jar

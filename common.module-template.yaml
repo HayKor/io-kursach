@@ -3,5 +3,5 @@ settings:
     version: 2.4.21
   jvm:
     jdk:
-      # сервер должен работать на JVM 21 (см. отчёт, гл. 06)
+      # the server must run on JVM 21, so every module it depends on must target it too
       version: 21

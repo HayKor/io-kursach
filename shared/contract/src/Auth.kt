@@ -8,7 +8,6 @@ data class LoginRequest(
     val password: String,
 )
 
-/** [token] передаётся в остальные запросы в заголовке `Authorization: Bearer <token>`. */
 @Serializable
 data class LoginResponse(
     val token: String,

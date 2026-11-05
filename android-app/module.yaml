@@ -7,7 +7,6 @@ dependencies:
   - ../shared/domain
   - ../shared/contract
   - $libs.metro.runtime
-  # UI
   - $libs.androidx.activity.compose
   - $compose.foundation
   - $compose.material3
@@ -15,7 +14,6 @@ dependencies:
   - $compose.uiTooling: runtime-only
   - $libs.decompose
   - $libs.decompose.extensions.compose
-  # Клиент API
   - $libs.ktor.client.core
   - $libs.ktor.client.okhttp
   - $libs.ktor.client.contentNegotiation

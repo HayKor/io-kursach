@@ -1,5 +1,5 @@
 <configuration>
-    <!-- toolchain кладёт logback.xml в executable-jar дважды; без этого logback печатает свой статус при каждом старте -->
+    <!-- executable-jar contains logback.xml twice, which makes logback print its status on every start -->
     <statusListener class="ch.qos.logback.core.status.NopStatusListener"/>
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>

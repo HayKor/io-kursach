@@ -13,14 +13,13 @@ data class PenaltyDto(
     val description: String,
     val orderNumber: String,
     val orderDate: LocalDate,
-    /** Дата погашения. В БД не хранится, сервер вычисляет её по дате приказа. */
+    /** Not stored in the DB; the server computes it from [orderDate]. */
     val expiryDate: LocalDate,
     val status: PenaltyStatus,
-    /** Реквизиты приказа о досрочном снятии, есть только у статуса [PenaltyStatus.REMOVED]. */
+    /** Present only when [status] is [PenaltyStatus.REMOVED]. */
     val removal: PenaltyRemovalDto?,
 )
 
-/** Карточка взыскания: само взыскание, вложения и журнал смены статусов. */
 @Serializable
 data class PenaltyDetailsDto(
     val penalty: PenaltyDto,
@@ -38,7 +37,7 @@ data class CreatePenaltyRequest(
     val orderDate: LocalDate,
 )
 
-/** Реквизиты приказа о досрочном снятии. Используется и в запросе на снятие, и в ответе. */
+/** Used both as the early removal request body and in [PenaltyDto]. */
 @Serializable
 data class PenaltyRemovalDto(
     val orderNumber: String,
@@ -72,10 +71,7 @@ enum class SortDirection {
     DESC,
 }
 
-/**
- * Поиск и фильтрация реестра взысканий. Передаётся query-параметрами из [ApiParams],
- * незаданные (`null`) параметры не передаются. Условия объединяются через «И».
- */
+/** Sent as query parameters (see [ApiParams]); `null` values are omitted, conditions are combined with AND. */
 data class PenaltyFilter(
     val status: PenaltyStatus? = null,
     val employeeName: String? = null,

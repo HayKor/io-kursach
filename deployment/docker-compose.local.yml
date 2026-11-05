@@ -1,6 +1,5 @@
-# Локальный запуск: сервер + PostgreSQL.
-#   cd deployment
-#   docker compose -f docker-compose.local.yml --env-file .env.dev up --build
+# Run via `make dev-compose`. Variables are substituted from --env-file, not env_file,
+# so plain `docker compose` needs `--env-file .env.dev`.
 name: sudv-local
 
 services:
