@@ -49,7 +49,7 @@ refs/               методички и задания к практическ
 - `shared:domain` — `ru.haykor.sudv.shared.domain`;
 - `shared:contract` — `ru.haykor.sudv.shared.contract`;
 - `server` — `ru.haykor.sudv.server`;
-- `android-app` — пока `ru.haykor.sudv` (под новое правило ещё не переведён).
+- `android-app` — `ru.haykor.sudv.android.app` (дефис в имени модуля заменён точкой). Это же `namespace` в `module.yaml`; `applicationId` остался `ru.haykor.sudv`, чтобы не менялся идентификатор установленного приложения.
 
 ### Сборка и запуск
 

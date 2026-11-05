@@ -1,4 +1,4 @@
-package ru.haykor.sudv
+package ru.haykor.sudv.android.app
 
 import android.app.Application
 import dev.zacsweers.metro.createGraphFactory

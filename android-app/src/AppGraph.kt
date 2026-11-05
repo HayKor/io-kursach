@@ -1,4 +1,4 @@
-package ru.haykor.sudv
+package ru.haykor.sudv.android.app
 
 import android.content.Context
 import dev.zacsweers.metro.AppScope

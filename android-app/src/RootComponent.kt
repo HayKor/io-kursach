@@ -1,4 +1,4 @@
-package ru.haykor.sudv
+package ru.haykor.sudv.android.app
 
 import com.arkivanov.decompose.ComponentContext
 import com.arkivanov.decompose.router.stack.ChildStack

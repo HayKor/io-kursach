@@ -1,4 +1,4 @@
-package ru.haykor.sudv
+package ru.haykor.sudv.android.app
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
