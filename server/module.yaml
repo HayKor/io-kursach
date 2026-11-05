@@ -23,6 +23,7 @@ dependencies:
   - $libs.exposed.kotlin.datetime
   - $libs.r2dbc.postgresql
   - $libs.r2dbc.pool
+  - $libs.fastexcel
 
 test-dependencies:
   - $libs.ktor.server.testHost

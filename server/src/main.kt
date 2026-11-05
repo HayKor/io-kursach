@@ -37,7 +37,7 @@ suspend fun Application.module() {
     configureStatusPages()
     configureAuthentication(graph.authService, graph.jwtService)
 
-    configureRouting(graph.authService, graph.recordService, graph.expiryService, graph.appConfig.maxAttachmentBytes)
+    configureRouting(graph.authService, graph.recordService, graph.expiryService, graph.reportService, graph.appConfig.maxAttachmentBytes)
     configureSwagger()
     graph.expiryScheduler.start(this)
 }

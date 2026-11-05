@@ -14,6 +14,7 @@ import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.concat
+import org.jetbrains.exposed.v1.core.count
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.greaterEq
 import org.jetbrains.exposed.v1.core.inList
@@ -35,12 +36,14 @@ import ru.haykor.sudv.contract.PenaltyFilter
 import ru.haykor.sudv.contract.PenaltyRemovalDto
 import ru.haykor.sudv.contract.PenaltySortField
 import ru.haykor.sudv.contract.SortDirection
+import ru.haykor.sudv.contract.SummaryRowDto
 import ru.haykor.sudv.domain.AttachmentId
 import ru.haykor.sudv.domain.DepartmentId
 import ru.haykor.sudv.domain.EmployeeId
 import ru.haykor.sudv.domain.PenaltyId
 import ru.haykor.sudv.domain.PenaltyRules
 import ru.haykor.sudv.domain.PenaltyStatus
+import ru.haykor.sudv.domain.PenaltyType
 import kotlin.time.Instant
 
 /** [storageKey] and [penaltyId] are internal fields not exposed through [AttachmentDto]. */
@@ -76,6 +79,9 @@ interface IPenaltyRepository {
     ): AttachmentId
 
     suspend fun deleteAttachment(id: AttachmentId)
+
+    /** All [departmentIds] are present even with zero counts; counted by violation_date within [from, to] inclusive, sorted by name. */
+    suspend fun countByDepartment(from: LocalDate, to: LocalDate, departmentIds: List<DepartmentId>): List<SummaryRowDto>
 }
 
 @Inject
@@ -188,6 +194,37 @@ class PenaltyRepository(private val transactor: Transactor) : IPenaltyRepository
 
     override suspend fun deleteAttachment(id: AttachmentId) {
         transactor.tx { Attachments.deleteWhere { Attachments.id eq id.value } }
+    }
+
+    override suspend fun countByDepartment(from: LocalDate, to: LocalDate, departmentIds: List<DepartmentId>): List<SummaryRowDto> = transactor.tx {
+        val departmentValues = departmentIds.map { it.value }
+        val departments = Departments
+            .selectAll()
+            .where { Departments.id inList departmentValues }
+            .orderBy(Departments.name, SortOrder.ASC)
+            .toList()
+            .map { DepartmentDto(DepartmentId(it[Departments.id].value), it[Departments.name]) }
+
+        // One grouped query for every requested department's counts, instead of one query per department.
+        val penaltyCount = Penalties.id.count()
+        val counts = (Penalties innerJoin Employees innerJoin Departments)
+            .select(Departments.id, Penalties.type, penaltyCount)
+            .where {
+                (Penalties.violationDate greaterEq from) and
+                    (Penalties.violationDate lessEq to) and
+                    (Employees.departmentId inList departmentValues)
+            }
+            .groupBy(Departments.id, Penalties.type)
+            .toList()
+            .associate { (DepartmentId(it[Departments.id].value) to it[Penalties.type]) to it[penaltyCount] }
+
+        departments.map { department ->
+            SummaryRowDto(
+                department = department,
+                remarkCount = (counts[department.id to PenaltyType.REMARK] ?: 0L).toInt(),
+                reprimandCount = (counts[department.id to PenaltyType.REPRIMAND] ?: 0L).toInt(),
+            )
+        }
     }
 
     private fun penaltyQuery() = (Penalties innerJoin Employees innerJoin Departments).selectAll()

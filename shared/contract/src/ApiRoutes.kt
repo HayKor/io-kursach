@@ -92,7 +92,7 @@ object ApiParams {
     /** Matches full name or personnel number. */
     const val QUERY = "query"
 
-    /** Repeated once per department in [ApiRoutes.REPORTS_SUMMARY]. */
+    /** Repeated once per department in [ApiRoutes.REPORTS_SUMMARY]; omitting it there means all departments. */
     const val DEPARTMENT_ID = "departmentId"
 
     /** Defaults to `false`. */

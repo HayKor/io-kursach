@@ -20,12 +20,14 @@ import ru.haykor.sudv.config.Bootstrap
 import ru.haykor.sudv.db.IEmployeeRepository
 import ru.haykor.sudv.db.IEventLogRepository
 import ru.haykor.sudv.db.IPenaltyRepository
+import ru.haykor.sudv.db.IReportRepository
 import ru.haykor.sudv.db.IUserRepository
 import ru.haykor.sudv.db.Transactor
 import ru.haykor.sudv.expiry.ExpiryScheduler
 import ru.haykor.sudv.expiry.IExpiryService
 import ru.haykor.sudv.files.IFileStorage
 import ru.haykor.sudv.records.IRecordService
+import ru.haykor.sudv.reports.IReportService
 import kotlin.time.Clock
 
 @DependencyGraph(AppScope::class)
@@ -41,8 +43,10 @@ interface AppGraph {
     val employeeRepository: IEmployeeRepository
     val penaltyRepository: IPenaltyRepository
     val eventLogRepository: IEventLogRepository
+    val reportRepository: IReportRepository
     val recordService: IRecordService
     val expiryService: IExpiryService
+    val reportService: IReportService
     val fileStorage: IFileStorage
     val expiryScheduler: ExpiryScheduler
     val bootstrap: Bootstrap

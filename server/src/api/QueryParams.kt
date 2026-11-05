@@ -11,6 +11,12 @@ fun Parameters.departmentIdOrNull(name: String): DepartmentId? = this[name]?.let
         ?: throw ApiException(ErrorCode.VALIDATION_FAILED, "Некорректный идентификатор подразделения")
 }
 
+/** Empty when [name] is absent; a non-numeric value in any repetition is [ErrorCode.VALIDATION_FAILED]. */
+fun Parameters.departmentIds(name: String): List<DepartmentId> = getAll(name)?.map { raw ->
+    raw.toLongOrNull()?.let { DepartmentId(it) }
+        ?: throw ApiException(ErrorCode.VALIDATION_FAILED, "Некорректный идентификатор подразделения")
+} ?: emptyList()
+
 /** A missing [name] returns `null`; a present but unparsable value is [ErrorCode.VALIDATION_FAILED]. */
 fun Parameters.localDateOrNull(name: String): LocalDate? = this[name]?.let { raw ->
     runCatching { LocalDate.parse(raw) }.getOrElse { throw ApiException(ErrorCode.VALIDATION_FAILED, "Некорректная дата") }
