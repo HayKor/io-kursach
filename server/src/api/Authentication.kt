@@ -1,8 +1,8 @@
 package ru.haykor.sudv.api
 
 import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoSet
 import dev.zacsweers.metro.Inject
-import dev.zacsweers.metro.SingleIn
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
@@ -25,10 +25,12 @@ import ru.haykor.sudv.domain.UserRole
 const val JWT_AUTH_NAME = "jwt"
 
 @Inject
-@SingleIn(AppScope::class)
-class JwtAuthentication(private val authService: IAuthService, private val jwtService: JwtService) {
-    fun install(application: Application) {
-        application.install(Authentication) {
+@ContributesIntoSet(AppScope::class)
+class JwtAuthenticationPlugin(private val authService: IAuthService, private val jwtService: JwtService) : PluginInstaller {
+    override val order = PluginOrder.AUTHENTICATION
+
+    override fun Application.install() {
+        install(Authentication) {
             jwt(JWT_AUTH_NAME) {
                 verifier(jwtService.verifier)
                 validate { credential ->

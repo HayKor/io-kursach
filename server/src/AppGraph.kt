@@ -13,7 +13,7 @@ import kotlinx.datetime.TimeZone
 import org.jetbrains.exposed.v1.core.vendors.PostgreSQLDialect
 import org.jetbrains.exposed.v1.r2dbc.R2dbcDatabase
 import org.jetbrains.exposed.v1.r2dbc.R2dbcDatabaseConfig
-import ru.haykor.sudv.api.JwtAuthentication
+import ru.haykor.sudv.api.PluginInstaller
 import ru.haykor.sudv.api.RouteRegistrar
 import ru.haykor.sudv.config.AppConfig
 import ru.haykor.sudv.config.Bootstrap
@@ -37,7 +37,7 @@ interface AppGraph : AppGraphTestAccessors {
     val connectionPool: ConnectionPool
     val database: R2dbcDatabase
     val bootstrap: Bootstrap
-    val jwtAuthentication: JwtAuthentication
+    val plugins: Set<PluginInstaller>
     val routes: Set<RouteRegistrar>
     val expiryScheduler: ExpiryScheduler
 

@@ -1,12 +1,9 @@
 package ru.haykor.sudv
 
 import dev.zacsweers.metro.createGraphFactory
-import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
-import io.ktor.server.plugins.calllogging.*
-import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.server.routing.*
 import io.ktor.util.AttributeKey
-import ru.haykor.sudv.api.configureStatusPages
 import ru.haykor.sudv.db.createSchema
 import kotlin.time.Clock
 
@@ -29,14 +26,9 @@ suspend fun Application.module() {
         graph.connectionPool.disposeLater().subscribe()
     }
 
-    install(ContentNegotiation) {
-        json()
+    graph.plugins.sortedBy { it.order }.forEach { with(it) { install() } }
+    routing {
+        graph.routes.forEach { with(it) { register() } }
     }
-    install(CallLogging)
-    configureStatusPages()
-    graph.jwtAuthentication.install(this)
-
-    configureRouting(graph.routes)
-    configureSwagger()
     graph.expiryScheduler.start(this)
 }
