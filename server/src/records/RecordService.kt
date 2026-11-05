@@ -4,10 +4,13 @@ import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
+import kotlinx.coroutines.CancellationException
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
+import org.slf4j.LoggerFactory
 import ru.haykor.sudv.api.ApiException
 import ru.haykor.sudv.auth.CurrentUser
+import ru.haykor.sudv.contract.AttachmentDto
 import ru.haykor.sudv.contract.CreatePenaltyRequest
 import ru.haykor.sudv.contract.DepartmentDto
 import ru.haykor.sudv.contract.EmployeeDto
@@ -20,12 +23,14 @@ import ru.haykor.sudv.db.IEmployeeRepository
 import ru.haykor.sudv.db.IEventLogRepository
 import ru.haykor.sudv.db.IPenaltyRepository
 import ru.haykor.sudv.db.Transactor
+import ru.haykor.sudv.domain.AttachmentId
 import ru.haykor.sudv.domain.DepartmentId
 import ru.haykor.sudv.domain.EmployeeId
 import ru.haykor.sudv.domain.PenaltyId
 import ru.haykor.sudv.domain.PenaltyStatus
 import ru.haykor.sudv.domain.UserRole
 import ru.haykor.sudv.domain.Validation
+import ru.haykor.sudv.files.IFileStorage
 import kotlin.time.Clock
 
 interface IRecordService {
@@ -44,7 +49,17 @@ interface IRecordService {
     suspend fun findPenalties(actor: CurrentUser, filter: PenaltyFilter): List<PenaltyDto>
     suspend fun getPenalty(actor: CurrentUser, id: PenaltyId): PenaltyDetailsDto
     suspend fun createPenalty(request: CreatePenaltyRequest): PenaltyDto
+
+    /** Validates size and format (see [ru.haykor.sudv.domain.AttachmentRules]); the penalty's department is not checked here. */
+    suspend fun addAttachment(penaltyId: PenaltyId, fileName: String, contentType: String, bytes: ByteArray): AttachmentDto
+
+    /** For MANAGER, a foreign department's attachment is [ErrorCode.FORBIDDEN]. */
+    suspend fun getAttachment(actor: CurrentUser, id: AttachmentId): StoredFile
+    suspend fun deleteAttachment(id: AttachmentId)
 }
+
+// Not a data class: generated equals/hashCode would compare the ByteArray by reference.
+class StoredFile(val fileName: String, val contentType: String, val bytes: ByteArray)
 
 @Inject
 @SingleIn(AppScope::class)
@@ -53,10 +68,12 @@ class RecordService(
     private val employeeRepository: IEmployeeRepository,
     private val penaltyRepository: IPenaltyRepository,
     private val eventLogRepository: IEventLogRepository,
+    private val fileStorage: IFileStorage,
     private val transactor: Transactor,
     private val clock: Clock,
     private val timeZone: TimeZone,
 ) : IRecordService {
+    private val logger = LoggerFactory.getLogger(RecordService::class.java)
 
     override suspend fun departments(): List<DepartmentDto> = employeeRepository.findAllDepartments()
 
@@ -103,8 +120,9 @@ class RecordService(
     override suspend fun getPenalty(actor: CurrentUser, id: PenaltyId): PenaltyDetailsDto {
         val penalty = penaltyRepository.findById(id) ?: throw ApiException(ErrorCode.NOT_FOUND, "Взыскание не найдено")
         actor.requireOwnDepartment(penalty.employee.department.id)
+        val attachments = penaltyRepository.findAttachments(id)
         val events = eventLogRepository.findByPenalty(id)
-        return PenaltyDetailsDto(penalty = penalty, attachments = emptyList(), events = events)
+        return PenaltyDetailsDto(penalty = penalty, attachments = attachments, events = events)
     }
 
     override suspend fun createPenalty(request: CreatePenaltyRequest): PenaltyDto {
@@ -121,6 +139,48 @@ class RecordService(
             val id = penaltyRepository.create(request)
             eventLogRepository.add(id, PenaltyStatus.ACTIVE, clock.now())
             penaltyRepository.findById(id) ?: error("Penalty $id disappeared right after creation")
+        }
+    }
+
+    override suspend fun addAttachment(penaltyId: PenaltyId, fileName: String, contentType: String, bytes: ByteArray): AttachmentDto {
+        penaltyRepository.findById(penaltyId) ?: throw ApiException(ErrorCode.NOT_FOUND, "Взыскание не найдено")
+
+        val storageKey = fileStorage.save(contentType, bytes, validateAttachment = true)
+        val uploadedAt = clock.now()
+        return try {
+            val id = penaltyRepository.addAttachment(penaltyId, fileName, contentType, bytes.size.toLong(), storageKey, uploadedAt)
+            AttachmentDto(id, fileName, contentType, bytes.size.toLong(), uploadedAt)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            fileStorage.delete(storageKey)
+            throw e
+        }
+    }
+
+    override suspend fun getAttachment(actor: CurrentUser, id: AttachmentId): StoredFile {
+        val record = penaltyRepository.findAttachment(id) ?: throw ApiException(ErrorCode.NOT_FOUND, "Вложение не найдено")
+        val penalty = penaltyRepository.findById(record.penaltyId) ?: error("Penalty ${record.penaltyId} missing for attachment $id")
+        actor.requireOwnDepartment(penalty.employee.department.id)
+
+        val bytes = fileStorage.read(record.storageKey)
+        if (bytes == null) {
+            logger.warn("Attachment file missing on disk: id={}, key={}", id, record.storageKey)
+            throw ApiException(ErrorCode.NOT_FOUND, "Файл вложения не найден")
+        }
+        return StoredFile(record.dto.fileName, record.dto.contentType, bytes)
+    }
+
+    override suspend fun deleteAttachment(id: AttachmentId) {
+        val record = penaltyRepository.findAttachment(id) ?: throw ApiException(ErrorCode.NOT_FOUND, "Вложение не найдено")
+        penaltyRepository.deleteAttachment(id)
+        try {
+            fileStorage.delete(record.storageKey)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // An orphan file on disk is harmless; a dangling DB row that still points at a deleted file is not.
+            logger.warn("Failed to delete attachment file: key={}", record.storageKey, e)
         }
     }
 

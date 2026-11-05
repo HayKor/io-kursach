@@ -4,6 +4,7 @@ import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import ru.haykor.sudv.api.authenticatedApi
+import ru.haykor.sudv.api.configureAttachmentRoutes
 import ru.haykor.sudv.api.configureAuthRoutes
 import ru.haykor.sudv.api.configureDepartmentRoutes
 import ru.haykor.sudv.api.configureEmployeeRoutes
@@ -13,7 +14,12 @@ import ru.haykor.sudv.auth.IAuthService
 import ru.haykor.sudv.expiry.IExpiryService
 import ru.haykor.sudv.records.IRecordService
 
-fun Application.configureRouting(authService: IAuthService, recordService: IRecordService, expiryService: IExpiryService) {
+fun Application.configureRouting(
+    authService: IAuthService,
+    recordService: IRecordService,
+    expiryService: IExpiryService,
+    maxAttachmentBytes: Long,
+) {
     routing {
         get("/health") {
             call.respondText("OK")
@@ -26,6 +32,7 @@ fun Application.configureRouting(authService: IAuthService, recordService: IReco
             configureDepartmentRoutes(recordService)
             configureEmployeeRoutes(recordService)
             configurePenaltyRoutes(recordService, expiryService)
+            configureAttachmentRoutes(recordService, maxAttachmentBytes)
         }
     }
 }

@@ -20,11 +20,13 @@ import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.core.lessEq
 import org.jetbrains.exposed.v1.core.like
 import org.jetbrains.exposed.v1.core.lowerCase
+import org.jetbrains.exposed.v1.r2dbc.deleteWhere
 import org.jetbrains.exposed.v1.r2dbc.insert
 import org.jetbrains.exposed.v1.r2dbc.insertAndGetId
 import org.jetbrains.exposed.v1.r2dbc.select
 import org.jetbrains.exposed.v1.r2dbc.selectAll
 import org.jetbrains.exposed.v1.r2dbc.update
+import ru.haykor.sudv.contract.AttachmentDto
 import ru.haykor.sudv.contract.CreatePenaltyRequest
 import ru.haykor.sudv.contract.DepartmentDto
 import ru.haykor.sudv.contract.EmployeeShortDto
@@ -33,11 +35,16 @@ import ru.haykor.sudv.contract.PenaltyFilter
 import ru.haykor.sudv.contract.PenaltyRemovalDto
 import ru.haykor.sudv.contract.PenaltySortField
 import ru.haykor.sudv.contract.SortDirection
+import ru.haykor.sudv.domain.AttachmentId
 import ru.haykor.sudv.domain.DepartmentId
 import ru.haykor.sudv.domain.EmployeeId
 import ru.haykor.sudv.domain.PenaltyId
 import ru.haykor.sudv.domain.PenaltyRules
 import ru.haykor.sudv.domain.PenaltyStatus
+import kotlin.time.Instant
+
+/** [storageKey] and [penaltyId] are internal fields not exposed through [AttachmentDto]. */
+data class AttachmentRecord(val dto: AttachmentDto, val penaltyId: PenaltyId, val storageKey: String)
 
 interface IPenaltyRepository {
     suspend fun find(filter: PenaltyFilter): List<PenaltyDto>
@@ -55,6 +62,20 @@ interface IPenaltyRepository {
     /** Single `UPDATE ... WHERE id = ? AND status = from`; returns whether a row actually changed. */
     suspend fun changeStatus(id: PenaltyId, from: PenaltyStatus, to: PenaltyStatus): Boolean
     suspend fun saveRemoval(id: PenaltyId, removal: PenaltyRemovalDto)
+
+    /** Sorted by uploaded_at, then id. */
+    suspend fun findAttachments(penaltyId: PenaltyId): List<AttachmentDto>
+    suspend fun findAttachment(id: AttachmentId): AttachmentRecord?
+    suspend fun addAttachment(
+        penaltyId: PenaltyId,
+        fileName: String,
+        contentType: String,
+        sizeBytes: Long,
+        storageKey: String,
+        uploadedAt: Instant,
+    ): AttachmentId
+
+    suspend fun deleteAttachment(id: AttachmentId)
 }
 
 @Inject
@@ -133,6 +154,42 @@ class PenaltyRepository(private val transactor: Transactor) : IPenaltyRepository
         }
     }
 
+    override suspend fun findAttachments(penaltyId: PenaltyId): List<AttachmentDto> = transactor.tx {
+        Attachments
+            .selectAll()
+            .where { Attachments.penaltyId eq penaltyId.value }
+            .orderBy(Attachments.uploadedAt to SortOrder.ASC, Attachments.id to SortOrder.ASC)
+            .toList()
+            .map { it.toAttachmentDto() }
+    }
+
+    override suspend fun findAttachment(id: AttachmentId): AttachmentRecord? = transactor.tx {
+        Attachments.selectAll().where { Attachments.id eq id.value }.singleOrNull()?.toAttachmentRecord()
+    }
+
+    override suspend fun addAttachment(
+        penaltyId: PenaltyId,
+        fileName: String,
+        contentType: String,
+        sizeBytes: Long,
+        storageKey: String,
+        uploadedAt: Instant,
+    ): AttachmentId = transactor.tx {
+        val id = Attachments.insertAndGetId {
+            it[Attachments.penaltyId] = penaltyId.value
+            it[Attachments.fileName] = fileName
+            it[Attachments.contentType] = contentType
+            it[Attachments.sizeBytes] = sizeBytes.toInt()
+            it[Attachments.storageKey] = storageKey
+            it[Attachments.uploadedAt] = uploadedAt
+        }
+        AttachmentId(id.value)
+    }
+
+    override suspend fun deleteAttachment(id: AttachmentId) {
+        transactor.tx { Attachments.deleteWhere { Attachments.id eq id.value } }
+    }
+
     private fun penaltyQuery() = (Penalties innerJoin Employees innerJoin Departments).selectAll()
 
     private suspend fun attachRemovals(dtos: List<PenaltyDto>): List<PenaltyDto> {
@@ -192,5 +249,19 @@ class PenaltyRepository(private val transactor: Transactor) : IPenaltyRepository
     private fun ResultRow.toRemovalDto() = PenaltyRemovalDto(
         orderNumber = this[PenaltyRemovals.orderNumber],
         orderDate = this[PenaltyRemovals.orderDate],
+    )
+
+    private fun ResultRow.toAttachmentDto() = AttachmentDto(
+        id = AttachmentId(this[Attachments.id].value),
+        fileName = this[Attachments.fileName],
+        contentType = this[Attachments.contentType],
+        sizeBytes = this[Attachments.sizeBytes].toLong(),
+        uploadedAt = this[Attachments.uploadedAt],
+    )
+
+    private fun ResultRow.toAttachmentRecord() = AttachmentRecord(
+        dto = toAttachmentDto(),
+        penaltyId = PenaltyId(this[Attachments.penaltyId].value),
+        storageKey = this[Attachments.storageKey],
     )
 }

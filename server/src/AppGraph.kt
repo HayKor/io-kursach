@@ -24,6 +24,7 @@ import ru.haykor.sudv.db.IUserRepository
 import ru.haykor.sudv.db.Transactor
 import ru.haykor.sudv.expiry.ExpiryScheduler
 import ru.haykor.sudv.expiry.IExpiryService
+import ru.haykor.sudv.files.IFileStorage
 import ru.haykor.sudv.records.IRecordService
 import kotlin.time.Clock
 
@@ -42,6 +43,7 @@ interface AppGraph {
     val eventLogRepository: IEventLogRepository
     val recordService: IRecordService
     val expiryService: IExpiryService
+    val fileStorage: IFileStorage
     val expiryScheduler: ExpiryScheduler
     val bootstrap: Bootstrap
 
