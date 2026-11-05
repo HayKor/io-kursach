@@ -24,7 +24,7 @@ services:
       context: ..
       dockerfile: deployment/Dockerfile
     environment:
-      DB_URL: r2dbc:pool:postgresql://db:5432/${POSTGRES_DB}
+      DB_URL: r2dbc:postgresql://db:5432/${POSTGRES_DB}
       DB_USER: ${POSTGRES_USER}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
     ports:

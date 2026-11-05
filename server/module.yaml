@@ -14,7 +14,6 @@ dependencies:
   - $libs.ktor.serialization.kotlinx.json
   - $libs.ktor.server.statusPages
   - $libs.ktor.server.callLogging
-  - $libs.ktor.server.requestValidation
   - $libs.ktor.server.auth
   - $libs.ktor.server.auth.jwt
   - $libs.ktor.server.swagger
@@ -28,6 +27,8 @@ dependencies:
 test-dependencies:
   - $libs.ktor.server.testHost
   - $libs.ktor.client.contentNegotiation
+  - $libs.testcontainers.postgresql
+  - $libs.postgresql.driver
 
 settings:
   ktor:

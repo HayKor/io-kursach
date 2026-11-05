@@ -6,6 +6,40 @@ ktor:
         port: 8080
 
 database:
-    url: "$DB_URL:r2dbc:pool:postgresql://localhost:5432/sudv"
+    url: "$DB_URL:r2dbc:postgresql://localhost:5432/sudv"
     user: "$DB_USER:sudv"
     password: "$DB_PASSWORD:sudv"
+    poolMaxSize: 10
+
+app:
+    timeZone: "$APP_TIME_ZONE:Europe/Moscow"
+
+security:
+    jwt:
+        secret: "$JWT_SECRET:dev-only-secret-change-me"
+        issuer: "sudv"
+        ttlHours: 12
+    passwordHashIterations: 600000
+
+files:
+    dir: "$FILES_DIR:build/files"
+    # Maximum attachment size, bytes (10 MiB).
+    maxAttachmentBytes: 10485760
+
+expiry:
+    schedulerEnabled: true
+    # Local time of the daily run, HH:MM in app.timeZone.
+    runAt: "00:05"
+
+bootstrap:
+    departments:
+        - "Дирекция"
+        - "Отдел кадров"
+        - "Юридический отдел"
+        - "ИТ-отдел"
+        - "Бухгалтерия"
+        - "Производственные подразделения"
+    admin:
+        login: "$ADMIN_LOGIN:admin"
+        password: "$ADMIN_PASSWORD:admin12345"
+        department: "ИТ-отдел"
