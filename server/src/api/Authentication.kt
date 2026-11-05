@@ -1,5 +1,8 @@
 package ru.haykor.sudv.api
 
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
@@ -21,18 +24,22 @@ import ru.haykor.sudv.domain.UserRole
 
 const val JWT_AUTH_NAME = "jwt"
 
-fun Application.configureAuthentication(authService: IAuthService, jwtService: JwtService) {
-    install(Authentication) {
-        jwt(JWT_AUTH_NAME) {
-            verifier(jwtService.verifier)
-            validate { credential ->
-                jwtService.userId(credential)?.let { authService.authenticate(it) }
-            }
-            challenge { _, _ ->
-                call.respond(
-                    HttpStatusCode.fromValue(ErrorCode.UNAUTHORIZED.httpStatus),
-                    ErrorResponse(ErrorCode.UNAUTHORIZED, "Требуется авторизация"),
-                )
+@Inject
+@SingleIn(AppScope::class)
+class JwtAuthentication(private val authService: IAuthService, private val jwtService: JwtService) {
+    fun install(application: Application) {
+        application.install(Authentication) {
+            jwt(JWT_AUTH_NAME) {
+                verifier(jwtService.verifier)
+                validate { credential ->
+                    jwtService.userId(credential)?.let { authService.authenticate(it) }
+                }
+                challenge { _, _ ->
+                    call.respond(
+                        HttpStatusCode.fromValue(ErrorCode.UNAUTHORIZED.httpStatus),
+                        ErrorResponse(ErrorCode.UNAUTHORIZED, "Требуется авторизация"),
+                    )
+                }
             }
         }
     }

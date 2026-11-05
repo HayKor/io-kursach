@@ -1,5 +1,8 @@
 package ru.haykor.sudv.api
 
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoSet
+import dev.zacsweers.metro.Inject
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
@@ -24,52 +27,65 @@ import ru.haykor.sudv.domain.UserRole
 import ru.haykor.sudv.records.StoredFile
 import ru.haykor.sudv.reports.IReportService
 
-fun Route.configureReportRoutes(reportService: IReportService) {
-    get(ApiRoutes.EMPLOYEE_CARD) {
-        val actor = call.requireRole(UserRole.HR, UserRole.MANAGER)
-        val id = EmployeeId(call.pathIdValue())
-        call.respond(reportService.employeeCard(actor, id))
-    }
+@Inject
+@ContributesIntoSet(AppScope::class)
+class ReportRoutes(private val reportService: IReportService) : RouteRegistrar {
+    override fun Route.register() {
+        authenticatedApi {
+            /** Tag: Reports */
+            get(ApiRoutes.EMPLOYEE_CARD) {
+                val actor = call.requireRole(UserRole.HR, UserRole.MANAGER)
+                val id = EmployeeId(call.pathIdValue())
+                call.respond(reportService.employeeCard(actor, id))
+            }
 
-    get(ApiRoutes.EMPLOYEE_CARD_EXPORT) {
-        val actor = call.requireRole(UserRole.HR, UserRole.MANAGER)
-        val id = EmployeeId(call.pathIdValue())
-        val format = call.request.queryParameters.reportFormatOrDefault()
-        call.respondFile(reportService.exportEmployeeCard(actor, id, format))
-    }
+            /** Tag: Reports */
+            get(ApiRoutes.EMPLOYEE_CARD_EXPORT) {
+                val actor = call.requireRole(UserRole.HR, UserRole.MANAGER)
+                val id = EmployeeId(call.pathIdValue())
+                val format = call.request.queryParameters.reportFormatOrDefault()
+                call.respondFile(reportService.exportEmployeeCard(actor, id, format))
+            }
 
-    get(ApiRoutes.PENALTIES_EXPORT) {
-        val actor = call.requireRole(UserRole.HR, UserRole.MANAGER)
-        val filter = call.request.queryParameters.toPenaltyFilter()
-        val format = call.request.queryParameters.reportFormatOrDefault()
-        call.respondFile(reportService.exportPenalties(actor, filter, format))
-    }
+            /** Tag: Reports */
+            get(ApiRoutes.PENALTIES_EXPORT) {
+                val actor = call.requireRole(UserRole.HR, UserRole.MANAGER)
+                val filter = call.request.queryParameters.toPenaltyFilter()
+                val format = call.request.queryParameters.reportFormatOrDefault()
+                call.respondFile(reportService.exportPenalties(actor, filter, format))
+            }
 
-    get(ApiRoutes.REPORTS_SUMMARY) {
-        call.requireRole(UserRole.HR)
-        val params = call.request.queryParameters
-        val from = params.localDateOrNull(ApiParams.PERIOD_FROM)
-            ?: throw ApiException(ErrorCode.VALIDATION_FAILED, "Не указана дата начала периода")
-        val to = params.localDateOrNull(ApiParams.PERIOD_TO)
-            ?: throw ApiException(ErrorCode.VALIDATION_FAILED, "Не указана дата окончания периода")
-        call.respond(reportService.summary(from, to, params.departmentIds(ApiParams.DEPARTMENT_ID)))
-    }
+            /** Tag: Reports */
+            get(ApiRoutes.REPORTS_SUMMARY) {
+                call.requireRole(UserRole.HR)
+                val params = call.request.queryParameters
+                val from = params.localDateOrNull(ApiParams.PERIOD_FROM)
+                    ?: throw ApiException(ErrorCode.VALIDATION_FAILED, "Не указана дата начала периода")
+                val to = params.localDateOrNull(ApiParams.PERIOD_TO)
+                    ?: throw ApiException(ErrorCode.VALIDATION_FAILED, "Не указана дата окончания периода")
+                call.respond(reportService.summary(from, to, params.departmentIds(ApiParams.DEPARTMENT_ID)))
+            }
 
-    get(ApiRoutes.REPORTS) {
-        call.requireRole(UserRole.HR)
-        call.respond(reportService.listReports())
-    }
+            /** Tag: Reports */
+            get(ApiRoutes.REPORTS) {
+                call.requireRole(UserRole.HR)
+                call.respond(reportService.listReports())
+            }
 
-    post(ApiRoutes.REPORTS) {
-        call.requireRole(UserRole.HR)
-        val request = call.receive<CreateReportRequest>()
-        call.respond(HttpStatusCode.Created, reportService.createReport(request))
-    }
+            /** Tag: Reports */
+            post(ApiRoutes.REPORTS) {
+                call.requireRole(UserRole.HR)
+                val request = call.receive<CreateReportRequest>()
+                call.respond(HttpStatusCode.Created, reportService.createReport(request))
+            }
 
-    get(ApiRoutes.REPORT_FILE) {
-        call.requireRole(UserRole.HR)
-        val id = ReportId(call.pathIdValue())
-        call.respondFile(reportService.reportFile(id))
+            /** Tag: Reports */
+            get(ApiRoutes.REPORT_FILE) {
+                call.requireRole(UserRole.HR)
+                val id = ReportId(call.pathIdValue())
+                call.respondFile(reportService.reportFile(id))
+            }
+        }
     }
 }
 

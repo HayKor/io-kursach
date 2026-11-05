@@ -13,43 +13,33 @@ import kotlinx.datetime.TimeZone
 import org.jetbrains.exposed.v1.core.vendors.PostgreSQLDialect
 import org.jetbrains.exposed.v1.r2dbc.R2dbcDatabase
 import org.jetbrains.exposed.v1.r2dbc.R2dbcDatabaseConfig
-import ru.haykor.sudv.auth.IAuthService
-import ru.haykor.sudv.auth.JwtService
+import ru.haykor.sudv.api.JwtAuthentication
+import ru.haykor.sudv.api.RouteRegistrar
 import ru.haykor.sudv.config.AppConfig
 import ru.haykor.sudv.config.Bootstrap
-import ru.haykor.sudv.db.IEmployeeRepository
-import ru.haykor.sudv.db.IEventLogRepository
 import ru.haykor.sudv.db.IPenaltyRepository
 import ru.haykor.sudv.db.IReportRepository
-import ru.haykor.sudv.db.IUserRepository
 import ru.haykor.sudv.db.Transactor
 import ru.haykor.sudv.expiry.ExpiryScheduler
 import ru.haykor.sudv.expiry.IExpiryService
-import ru.haykor.sudv.files.IFileStorage
-import ru.haykor.sudv.records.IRecordService
-import ru.haykor.sudv.reports.IReportService
 import kotlin.time.Clock
 
-@DependencyGraph(AppScope::class)
-interface AppGraph {
+/** Accessors only tests use (through [AppGraphKey]); production code gets dependencies by constructor injection. */
+interface AppGraphTestAccessors {
     val appConfig: AppConfig
-    val timeZone: TimeZone
-    val transactor: Transactor
+    val expiryService: IExpiryService
+    val penaltyRepository: IPenaltyRepository
+    val reportRepository: IReportRepository
+}
+
+@DependencyGraph(AppScope::class)
+interface AppGraph : AppGraphTestAccessors {
     val connectionPool: ConnectionPool
     val database: R2dbcDatabase
-    val authService: IAuthService
-    val jwtService: JwtService
-    val userRepository: IUserRepository
-    val employeeRepository: IEmployeeRepository
-    val penaltyRepository: IPenaltyRepository
-    val eventLogRepository: IEventLogRepository
-    val reportRepository: IReportRepository
-    val recordService: IRecordService
-    val expiryService: IExpiryService
-    val reportService: IReportService
-    val fileStorage: IFileStorage
-    val expiryScheduler: ExpiryScheduler
     val bootstrap: Bootstrap
+    val jwtAuthentication: JwtAuthentication
+    val routes: Set<RouteRegistrar>
+    val expiryScheduler: ExpiryScheduler
 
     // Built explicitly (rather than via the "r2dbc:pool:" URL scheme) so the pool can be disposed
     // on application shutdown; otherwise every module() start leaks one pool's worth of connections.

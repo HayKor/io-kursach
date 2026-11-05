@@ -1,5 +1,8 @@
 package ru.haykor.sudv.api
 
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoSet
+import dev.zacsweers.metro.Inject
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.Parameters
 import io.ktor.server.application.call
@@ -21,27 +24,40 @@ import ru.haykor.sudv.domain.UserRole
 import ru.haykor.sudv.expiry.IExpiryService
 import ru.haykor.sudv.records.IRecordService
 
-fun Route.configurePenaltyRoutes(recordService: IRecordService, expiryService: IExpiryService) {
-    get(ApiRoutes.PENALTIES) {
-        val actor = call.requireRole(UserRole.HR, UserRole.MANAGER)
-        val filter = call.request.queryParameters.toPenaltyFilter()
-        call.respond(recordService.findPenalties(actor, filter))
-    }
-    post(ApiRoutes.PENALTIES) {
-        call.requireRole(UserRole.HR)
-        val request = call.receive<CreatePenaltyRequest>()
-        call.respond(HttpStatusCode.Created, recordService.createPenalty(request))
-    }
-    get(ApiRoutes.PENALTY) {
-        val actor = call.requireRole(UserRole.HR, UserRole.MANAGER)
-        val id = PenaltyId(call.pathIdValue())
-        call.respond(recordService.getPenalty(actor, id))
-    }
-    post(ApiRoutes.PENALTY_REMOVAL) {
-        call.requireRole(UserRole.HR)
-        val id = PenaltyId(call.pathIdValue())
-        val request = call.receive<PenaltyRemovalDto>()
-        call.respond(expiryService.removeEarly(id, request))
+@Inject
+@ContributesIntoSet(AppScope::class)
+class PenaltyRoutes(
+    private val recordService: IRecordService,
+    private val expiryService: IExpiryService,
+) : RouteRegistrar {
+    override fun Route.register() {
+        authenticatedApi {
+            /** Tag: Penalties */
+            get(ApiRoutes.PENALTIES) {
+                val actor = call.requireRole(UserRole.HR, UserRole.MANAGER)
+                val filter = call.request.queryParameters.toPenaltyFilter()
+                call.respond(recordService.findPenalties(actor, filter))
+            }
+            /** Tag: Penalties */
+            post(ApiRoutes.PENALTIES) {
+                call.requireRole(UserRole.HR)
+                val request = call.receive<CreatePenaltyRequest>()
+                call.respond(HttpStatusCode.Created, recordService.createPenalty(request))
+            }
+            /** Tag: Penalties */
+            get(ApiRoutes.PENALTY) {
+                val actor = call.requireRole(UserRole.HR, UserRole.MANAGER)
+                val id = PenaltyId(call.pathIdValue())
+                call.respond(recordService.getPenalty(actor, id))
+            }
+            /** Tag: Penalties */
+            post(ApiRoutes.PENALTY_REMOVAL) {
+                call.requireRole(UserRole.HR)
+                val id = PenaltyId(call.pathIdValue())
+                val request = call.receive<PenaltyRemovalDto>()
+                call.respond(expiryService.removeEarly(id, request))
+            }
+        }
     }
 }
 
