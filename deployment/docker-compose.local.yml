@@ -1,0 +1,38 @@
+# Локальный запуск: сервер + PostgreSQL.
+#   cd deployment
+#   docker compose -f docker-compose.local.yml --env-file .env.dev up --build
+name: sudv-local
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?задайте в .env.dev}
+      POSTGRES_USER: ${POSTGRES_USER:?задайте в .env.dev}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?задайте в .env.dev}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  server:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile
+    environment:
+      DB_URL: r2dbc:pool:postgresql://db:5432/${POSTGRES_DB}
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db-data:
