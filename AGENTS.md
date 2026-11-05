@@ -93,7 +93,7 @@ make dev-destroy   # остановить и удалить данные БД
 | `android-app` | Compose + Material 3 (Expressive), Decompose (навигация и компоненты), Metro (DI), Ktor client (OkHttp + kotlinx-json), kotlinx-serialization |
 | `server` | Ktor server (Netty, YAML-конфиг, content negotiation, status pages, call logging, request validation, auth + JWT), Exposed **через R2DBC** (`exposed-r2dbc`, `r2dbc-postgresql`, `r2dbc-pool`), `exposed-kotlin-datetime`, Metro, logback |
 | `shared:contract` | `shared:domain`, kotlinx-serialization-json, kotlinx-datetime (все экспортируются) |
-| `shared:domain` | без внешних зависимостей |
+| `shared:domain` | только `kotlinx-serialization-core` (аннотация `@Serializable` на id) |
 
 Версии — только в `libs.versions.toml`, в `module.yaml` ссылки вида `$libs.xxx`. Исключение — Compose: используется встроенный каталог `$compose.*`, потому что его версия привязана к настройке `compose` toolchain. У Ktor `applyBom: false`, чтобы версию задавал только каталог.
 
@@ -101,6 +101,7 @@ make dev-destroy   # остановить и удалить данные БД
 
 - `shared:contract` и `shared:domain` **не зависят** от Android и Ktor. `contract` зависит от `domain` (и экспортирует его), обратная зависимость запрещена: enum-ы `UserRole`, `PenaltyType`, `PenaltyStatus`, `ReportFormat` живут в `domain`, DTO используют их напрямую.
 - Контракт API — `shared:contract`: адреса в `ApiRoutes` (шаблоны `{id}` для сервера, функции для клиента), имена параметров в `ApiParams`, ошибки — `ErrorResponse` + `ErrorCode` (с HTTP-статусом). Даты — `kotlinx.datetime.LocalDate`, моменты времени — `kotlin.time.Instant`, оба в JSON как ISO-строки. Ответы — `*Dto`, тела запросов — `*Request`.
+- Идентификаторы сущностей — `@Serializable @JvmInline value class <Entity>Id(val value: Long)` в `shared:domain` (`Ids.kt`), голый `Long` для id не использовать. В JSON id — обычное число. В common-коде `@JvmInline` нужно импортировать явно (`kotlin.jvm.JvmInline`).
 - Клиент и сервер общаются только через REST/JSON API, описанное в `shared:contract`.
 - Правила предметной области (статусы, переходы, сроки, валидация) пишутся один раз, в `shared:domain`.
 - DI на обеих сторонах — **Metro** (плагин компилятора, граф проверяется при компиляции). Граф — `AppGraph`: на сервере его надо создавать в `Application.module()` через `createGraphFactory<AppGraph.Factory>().create(environment.config)` (пока не создаётся — нет сервисов, которым он нужен), на Android он хранится в `SudvApplication.graph`.

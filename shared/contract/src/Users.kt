@@ -4,7 +4,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class UserDto(
-    val id: Long,
+    val id: UserId,
     val login: String,
     val role: UserRole,
     val isBlocked: Boolean,
@@ -16,5 +16,5 @@ data class CreateUserRequest(
     val login: String,
     val password: String,
     val role: UserRole,
-    val employeeId: Long,
+    val employeeId: EmployeeId,
 )

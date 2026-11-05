@@ -33,14 +33,14 @@ data class SummaryRowDto(
 data class CreateReportRequest(
     val periodFrom: LocalDate,
     val periodTo: LocalDate,
-    val departmentIds: List<Long>,
+    val departmentIds: List<DepartmentId>,
     val format: ReportFormat,
 )
 
 /** Отчёт из архива с параметрами формирования. */
 @Serializable
 data class ReportDto(
-    val id: Long,
+    val id: ReportId,
     val periodFrom: LocalDate,
     val periodTo: LocalDate,
     val departments: List<DepartmentDto>,

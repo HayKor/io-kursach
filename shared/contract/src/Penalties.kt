@@ -6,7 +6,7 @@ import kotlin.time.Instant
 
 @Serializable
 data class PenaltyDto(
-    val id: Long,
+    val id: PenaltyId,
     val employee: EmployeeShortDto,
     val type: PenaltyType,
     val violationDate: LocalDate,
@@ -30,7 +30,7 @@ data class PenaltyDetailsDto(
 
 @Serializable
 data class CreatePenaltyRequest(
-    val employeeId: Long,
+    val employeeId: EmployeeId,
     val type: PenaltyType,
     val violationDate: LocalDate,
     val description: String,
@@ -53,7 +53,7 @@ data class StatusEventDto(
 
 @Serializable
 data class AttachmentDto(
-    val id: Long,
+    val id: AttachmentId,
     val fileName: String,
     val contentType: String,
     val sizeBytes: Long,
@@ -79,7 +79,7 @@ enum class SortDirection {
 data class PenaltyFilter(
     val status: PenaltyStatus? = null,
     val employeeName: String? = null,
-    val departmentId: Long? = null,
+    val departmentId: DepartmentId? = null,
     val orderDateFrom: LocalDate? = null,
     val orderDateTo: LocalDate? = null,
     val sort: PenaltySortField = PenaltySortField.ORDER_DATE,

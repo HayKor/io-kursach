@@ -8,13 +8,13 @@ import kotlin.test.assertTrue
 import kotlin.time.Instant
 
 class ContractTest {
-    private val department = DepartmentDto(id = 1, name = "Бухгалтерия")
+    private val department = DepartmentDto(id = DepartmentId(1), name = "Бухгалтерия")
     private val employee = EmployeeShortDto(
-        id = 7, personnelNumber = "0042", lastName = "Иванов", firstName = "Иван",
+        id = EmployeeId(7), personnelNumber = "0042", lastName = "Иванов", firstName = "Иван",
         middleName = null, department = department,
     )
     private val penalty = PenaltyDto(
-        id = 3, employee = employee, type = PenaltyType.REPRIMAND,
+        id = PenaltyId(3), employee = employee, type = PenaltyType.REPRIMAND,
         violationDate = LocalDate(2026, 3, 10), description = "Опоздание",
         orderNumber = "15-к", orderDate = LocalDate(2026, 3, 12), expiryDate = LocalDate(2027, 3, 12),
         status = PenaltyStatus.ACTIVE, removal = null,
@@ -23,6 +23,7 @@ class ContractTest {
     @Test
     fun penaltyRoundTrip() {
         val json = Json.encodeToString(penalty)
+        assertTrue("\"id\":3," in json, json)
         assertTrue("\"orderDate\":\"2026-03-12\"" in json, json)
         assertTrue("\"type\":\"REPRIMAND\"" in json, json)
         assertTrue("\"status\":\"ACTIVE\"" in json, json)
@@ -45,6 +46,17 @@ class ContractTest {
     }
 
     @Test
+    fun idListIsArrayOfNumbers() {
+        val request = CreateReportRequest(
+            periodFrom = LocalDate(2026, 1, 1), periodTo = LocalDate(2026, 6, 30),
+            departmentIds = listOf(DepartmentId(1), DepartmentId(4)), format = ReportFormat.XLSX,
+        )
+        val json = Json.encodeToString(request)
+        assertTrue("\"departmentIds\":[1,4]" in json, json)
+        assertEquals(request, Json.decodeFromString<CreateReportRequest>(json))
+    }
+
+    @Test
     fun errorResponseUsesCodeName() {
         val json = Json.encodeToString(ErrorResponse(ErrorCode.DUPLICATE_LOGIN, "Логин занят"))
         assertEquals("""{"code":"DUPLICATE_LOGIN","message":"Логин занят"}""", json)
@@ -52,7 +64,7 @@ class ContractTest {
 
     @Test
     fun routesSubstituteId() {
-        assertEquals("/api/penalties/5/removal", ApiRoutes.penaltyRemoval(5))
-        assertEquals("/api/employees/9/card/export", ApiRoutes.employeeCardExport(9))
+        assertEquals("/api/penalties/5/removal", ApiRoutes.penaltyRemoval(PenaltyId(5)))
+        assertEquals("/api/employees/9/card/export", ApiRoutes.employeeCardExport(EmployeeId(9)))
     }
 }

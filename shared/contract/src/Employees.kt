@@ -4,13 +4,13 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class DepartmentDto(
-    val id: Long,
+    val id: DepartmentId,
     val name: String,
 )
 
 @Serializable
 data class EmployeeDto(
-    val id: Long,
+    val id: EmployeeId,
     val personnelNumber: String,
     val lastName: String,
     val firstName: String,
@@ -23,7 +23,7 @@ data class EmployeeDto(
 /** Краткие сведения о сотруднике внутри других объектов (взыскание, учётная запись). */
 @Serializable
 data class EmployeeShortDto(
-    val id: Long,
+    val id: EmployeeId,
     val personnelNumber: String,
     val lastName: String,
     val firstName: String,
@@ -39,5 +39,5 @@ data class EmployeeRequest(
     val firstName: String,
     val middleName: String? = null,
     val position: String,
-    val departmentId: Long,
+    val departmentId: DepartmentId,
 )

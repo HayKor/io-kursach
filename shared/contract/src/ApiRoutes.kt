@@ -68,17 +68,17 @@ object ApiRoutes {
     /** `GET` → файл отчёта из архива. */
     const val REPORT_FILE = "/api/reports/{id}/file"
 
-    fun userBlock(id: Long) = USER_BLOCK.withId(id)
-    fun userUnblock(id: Long) = USER_UNBLOCK.withId(id)
-    fun employee(id: Long) = EMPLOYEE.withId(id)
-    fun employeeArchive(id: Long) = EMPLOYEE_ARCHIVE.withId(id)
-    fun employeeCard(id: Long) = EMPLOYEE_CARD.withId(id)
-    fun employeeCardExport(id: Long) = EMPLOYEE_CARD_EXPORT.withId(id)
-    fun penalty(id: Long) = PENALTY.withId(id)
-    fun penaltyRemoval(id: Long) = PENALTY_REMOVAL.withId(id)
-    fun penaltyAttachments(id: Long) = PENALTY_ATTACHMENTS.withId(id)
-    fun attachment(id: Long) = ATTACHMENT.withId(id)
-    fun reportFile(id: Long) = REPORT_FILE.withId(id)
+    fun userBlock(id: UserId) = USER_BLOCK.withId(id.value)
+    fun userUnblock(id: UserId) = USER_UNBLOCK.withId(id.value)
+    fun employee(id: EmployeeId) = EMPLOYEE.withId(id.value)
+    fun employeeArchive(id: EmployeeId) = EMPLOYEE_ARCHIVE.withId(id.value)
+    fun employeeCard(id: EmployeeId) = EMPLOYEE_CARD.withId(id.value)
+    fun employeeCardExport(id: EmployeeId) = EMPLOYEE_CARD_EXPORT.withId(id.value)
+    fun penalty(id: PenaltyId) = PENALTY.withId(id.value)
+    fun penaltyRemoval(id: PenaltyId) = PENALTY_REMOVAL.withId(id.value)
+    fun penaltyAttachments(id: PenaltyId) = PENALTY_ATTACHMENTS.withId(id.value)
+    fun attachment(id: AttachmentId) = ATTACHMENT.withId(id.value)
+    fun reportFile(id: ReportId) = REPORT_FILE.withId(id.value)
 
     private fun String.withId(id: Long) = replace("{$ID}", id.toString())
 }

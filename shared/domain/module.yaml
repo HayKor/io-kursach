@@ -4,3 +4,8 @@ product:
 
 apply:
   - ../../common.module-template.yaml
+
+settings:
+  kotlin:
+    # только @Serializable на value class-идентификаторах, без формата JSON
+    serialization: enabled
