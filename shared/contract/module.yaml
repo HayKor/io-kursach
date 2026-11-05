@@ -3,7 +3,9 @@ product:
   platforms: [ jvm, android ]
 
 dependencies:
+  - ../domain: exported
   - $kotlin.serialization.json: exported
+  - $libs.kotlinx.datetime: exported
 
 apply:
   - ../../common.module-template.yaml

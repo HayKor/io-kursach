@@ -1,0 +1,58 @@
+package ru.haykor.sudv
+
+import kotlinx.datetime.LocalDate
+import kotlinx.serialization.json.Json
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+import kotlin.time.Instant
+
+class ContractTest {
+    private val department = DepartmentDto(id = 1, name = "Бухгалтерия")
+    private val employee = EmployeeShortDto(
+        id = 7, personnelNumber = "0042", lastName = "Иванов", firstName = "Иван",
+        middleName = null, department = department,
+    )
+    private val penalty = PenaltyDto(
+        id = 3, employee = employee, type = PenaltyType.REPRIMAND,
+        violationDate = LocalDate(2026, 3, 10), description = "Опоздание",
+        orderNumber = "15-к", orderDate = LocalDate(2026, 3, 12), expiryDate = LocalDate(2027, 3, 12),
+        status = PenaltyStatus.ACTIVE, removal = null,
+    )
+
+    @Test
+    fun penaltyRoundTrip() {
+        val json = Json.encodeToString(penalty)
+        assertTrue("\"orderDate\":\"2026-03-12\"" in json, json)
+        assertTrue("\"type\":\"REPRIMAND\"" in json, json)
+        assertTrue("\"status\":\"ACTIVE\"" in json, json)
+        assertEquals(penalty, Json.decodeFromString<PenaltyDto>(json))
+    }
+
+    @Test
+    fun instantIsIsoString() {
+        val event = StatusEventDto(PenaltyStatus.EXPIRED, Instant.parse("2027-03-12T00:00:05Z"))
+        val json = Json.encodeToString(event)
+        assertEquals("""{"status":"EXPIRED","changedAt":"2027-03-12T00:00:05Z"}""", json)
+        assertEquals(event, Json.decodeFromString<StatusEventDto>(json))
+    }
+
+    @Test
+    fun totalCountIsNotSerialized() {
+        val row = SummaryRowDto(department, remarkCount = 2, reprimandCount = 1)
+        assertEquals(3, row.totalCount)
+        assertTrue("totalCount" !in Json.encodeToString(row))
+    }
+
+    @Test
+    fun errorResponseUsesCodeName() {
+        val json = Json.encodeToString(ErrorResponse(ErrorCode.DUPLICATE_LOGIN, "Логин занят"))
+        assertEquals("""{"code":"DUPLICATE_LOGIN","message":"Логин занят"}""", json)
+    }
+
+    @Test
+    fun routesSubstituteId() {
+        assertEquals("/api/penalties/5/removal", ApiRoutes.penaltyRemoval(5))
+        assertEquals("/api/employees/9/card/export", ApiRoutes.employeeCardExport(9))
+    }
+}
