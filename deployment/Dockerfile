@@ -11,7 +11,9 @@ RUN --mount=type=cache,target=/root/.cache/JetBrains/Kotlin \
  && cp build/tasks/_server_executableJarJvm/server-jvm-executable.jar /sudv-server.jar
 
 FROM eclipse-temurin:21-jre-noble
-RUN useradd --system sudv
+RUN useradd --system sudv \
+ && mkdir -p /srv/sudv/files \
+ && chown sudv:sudv /srv/sudv/files
 USER sudv
 WORKDIR /app
 COPY --from=build /sudv-server.jar /app/sudv-server.jar

@@ -66,11 +66,13 @@ refs/               методички и задания к практическ
 
 Исполняемый jar сервера: `./kotlin package -m server -f executable-jar` → `build/tasks/_server_executableJarJvm/server-jvm-executable.jar`.
 
-Для работы с БД серверу нужен PostgreSQL. Настройки подключения в `server/resources/application.yaml`, их можно переопределить переменными окружения `DB_URL`, `DB_USER`, `DB_PASSWORD`. По умолчанию: `r2dbc:pool:postgresql://localhost:5432/sudv`, пользователь и пароль `sudv`. Временная БД для проверки:
+Для работы с БД серверу нужен PostgreSQL. Настройки подключения в `server/resources/application.yaml`, их можно переопределить переменными окружения `DB_URL`, `DB_USER`, `DB_PASSWORD`. По умолчанию: `r2dbc:postgresql://localhost:5432/sudv`, пользователь и пароль `sudv` (без схемы `r2dbc:pool:` — пул собирается явно в `AppGraph`, чтобы его можно было закрыть при остановке приложения, см. «Подводные камни»). Схема БД создаётся автоматически при старте (`SchemaUtils.create` по таблицам Exposed), миграций нет. Остальные настройки — `JWT_SECRET`, `ADMIN_LOGIN`, `ADMIN_PASSWORD`, `FILES_DIR` — тоже переопределяются переменными окружения; при старте сервер создаёт учётную запись `ADMIN` с логином и паролем из `ADMIN_LOGIN`/`ADMIN_PASSWORD`, если в БД ещё нет ни одной учётной записи с этой ролью. Временная БД для проверки:
 
 ```bash
 docker run -d --rm --name sudv-pg -e POSTGRES_DB=sudv -e POSTGRES_USER=sudv -e POSTGRES_PASSWORD=sudv -p 5432:5432 postgres:16
 ```
+
+Тесты сервера поднимают настоящий PostgreSQL через Testcontainers (`postgres:16-alpine`), поэтому для `./kotlin test -m server` нужен запущенный Docker.
 
 ### Docker (`deployment/`)
 
@@ -87,16 +89,16 @@ make dev-stop      # остановить, данные БД сохраняют�
 make dev-destroy   # остановить и удалить данные БД
 ```
 
-Если запускать `docker compose` руками, `--env-file deployment/.env.dev` обязателен: без него compose сразу завершается с ошибкой о незаданных переменных. Схема БД пока не создаётся автоматически (миграций нет), таблицы для проверки создавать вручную через `psql`.
+Если запускать `docker compose` руками, `--env-file deployment/.env.dev` обязателен: без него compose сразу завершается с ошибкой о незаданных переменных — это касается не только переменных БД, но и `JWT_SECRET`, `ADMIN_LOGIN`, `ADMIN_PASSWORD` сервиса `server`. Вложения сервис пишет в именованный том `files-data`, смонтированный на `/srv/sudv/files`.
 
 ### Стек
 
 | Модуль | Библиотеки |
 |---|---|
 | `android-app` | Compose + Material 3 (Expressive), Decompose (навигация и компоненты), Metro (DI), Ktor client (OkHttp + kotlinx-json), kotlinx-serialization |
-| `server` | Ktor server (Netty, YAML-конфиг, content negotiation, status pages, call logging, request validation, auth + JWT, Swagger UI + OpenAPI), Exposed **через R2DBC** (`exposed-r2dbc`, `r2dbc-postgresql`, `r2dbc-pool`), `exposed-kotlin-datetime`, Metro, logback |
+| `server` | Ktor server (Netty, YAML-конфиг, content negotiation, status pages, call logging, auth + JWT, Swagger UI + OpenAPI), Exposed **через R2DBC** (`exposed-r2dbc`, `r2dbc-postgresql`, `r2dbc-pool`), `exposed-kotlin-datetime`, `fastexcel` (запись XLSX), Metro, logback; тесты — Testcontainers + JDBC-драйвер PostgreSQL (только в тестах) |
 | `shared:contract` | `shared:domain`, kotlinx-serialization-json, kotlinx-datetime (все экспортируются) |
-| `shared:domain` | только `kotlinx-serialization-core` (аннотация `@Serializable` на id) |
+| `shared:domain` | `kotlinx-serialization-core` (аннотация `@Serializable` на id) и kotlinx-datetime (все экспортируются) |
 
 Версии — только в `libs.versions.toml`, в `module.yaml` ссылки вида `$libs.xxx`. Исключение — Compose: используется встроенный каталог `$compose.*`, потому что его версия привязана к настройке `compose` toolchain. У Ktor `applyBom: false`, чтобы версию задавал только каталог.
 
@@ -113,17 +115,19 @@ make dev-destroy   # остановить и удалить данные БД
 - Контракт API — `shared:contract`: адреса в `ApiRoutes` (шаблоны `{id}` для сервера, функции для клиента), имена параметров в `ApiParams`, ошибки — `ErrorResponse` + `ErrorCode` (с HTTP-статусом). Даты — `kotlinx.datetime.LocalDate`, моменты времени — `kotlin.time.Instant`, оба в JSON как ISO-строки. Ответы — `*Dto`, тела запросов — `*Request`.
 - Идентификаторы сущностей — `@Serializable @JvmInline value class <Entity>Id(val value: Long)` в `shared:domain` (`Ids.kt`), голый `Long` для id не использовать. В JSON id — обычное число. В common-коде `@JvmInline` нужно импортировать явно (`kotlin.jvm.JvmInline`).
 - Клиент и сервер общаются только через REST/JSON API, описанное в `shared:contract`.
-- Правила предметной области (статусы, переходы, сроки, валидация) пишутся один раз, в `shared:domain`.
-- DI на обеих сторонах — **Metro** (плагин компилятора, граф проверяется при компиляции). Граф — `AppGraph`: на сервере его надо создавать в `Application.module()` через `createGraphFactory<AppGraph.Factory>().create(environment.config)` (пока не создаётся — нет сервисов, которым он нужен), на Android он хранится в `SudvApplication.graph`.
+- Правила предметной области (статусы, переходы, сроки, валидация) пишутся один раз, в `shared:domain`; срок погашения взыскания вычисляется только через `PenaltyRules.expiryDate` — ни в SQL, ни где-либо ещё.
+- DI на обеих сторонах — **Metro** (плагин компилятора, граф проверяется при компиляции). Граф — `AppGraph`: на сервере он создаётся в `Application.module()` через `createGraphFactory<AppGraph.Factory>().create(environment.config, Clock.System)`, на Android он хранится в `SudvApplication.graph`.
+- Пакеты сервера `ru.haykor.sudv.<компонент>` лежат в одноимённых подпапках `server/src/<компонент>/`: `api` («Веб-API»), `auth` («Управление доступом»), `records` («Учёт сотрудников и нарушений»), `expiry` («Контроль сроков»), `reports` («Отчётность»), `files` («Хранилище файлов»), `db` («Доступ к данным»), `config` (конфигурация и bootstrap).
+- Права: роль проверяют маршруты (`requireRole`), ограничение `MANAGER` на своё подразделение — сервисы. Вкратце: `ADMIN` управляет учётными записями; `HR` работает с сотрудниками, взысканиями, вложениями и отчётами; `MANAGER` только читает сотрудников, взыскания и вложения своего подразделения. `MANAGER` не может указать чужое подразделение даже параметром запроса — такой запрос и обращение по id к чужим данным отклоняются `FORBIDDEN`, а не отфильтровываются молча.
 - БД: только Exposed **DSL** (не DAO — `exposed-dao-r2dbc` экспериментальный), все запросы внутри `suspendTransaction { }`. Блокирующий `transaction { }` — это JDBC, не использовать.
 - Room на Android **не используется**: от него отказались намеренно.
 - Навигация на Android — Decompose: `RootComponent` / `DefaultRootComponent`, конфигурации экранов — `@Serializable`.
 
 ### Текущее состояние
 
-Пока это каркас: стек подключён и проверен (сборка, тесты, запуск на эмуляторе, запрос к PostgreSQL), контракт API описан в `shared:contract`, но предметной логики нет. На сервере есть только `GET /health` (отвечает `OK`) и Swagger UI на `/docs`.
+Сервер реализует компоненты из отчёта (гл. 06–07): «Веб-API» (маршруты в `api/`), «Управление доступом» (`IAuthService`, JWT, хеширование паролей, bootstrap первого `ADMIN`), «Учёт сотрудников и нарушений» (`IRecordService`), «Контроль сроков» (`IExpiryService` и ежедневный планировщик), «Отчётность» (`IReportService`, экспорт в XLSX/CSV, архив отчётов), «Хранилище файлов» (`IFileStorage`) и «Доступ к данным» (репозитории `I*Repository` на Exposed/R2DBC). Схема БД создаётся при старте, миграций нет. Swagger UI — на `/docs`. Локальный запуск через `deployment/docker-compose.local.yml` и `Makefile` сохраняет данные и файлы вложений в именованных томах между перезапусками.
 
-Что предстоит реализовать (по отчёту, гл. 06–07): компоненты сервера «Веб-API» (`ISudvApi`), «Управление доступом» (`IAuthService`, JWT), «Учёт сотрудников и нарушений» (`IRecordService`), «Отчётность» (`IReportService`), «Контроль сроков» (`IExpiryService`) с планировщиком, «Хранилище файлов» (`IFileStorage`), «Доступ к данным» (репозитории `I*Repository`); на Android — «Клиент API» (`IApiClient`, хранение токена) и экраны; миграции схемы БД; compose-файл для боевого развёртывания (по отчёту: контейнеры JVM 21 и PostgreSQL 16, том `/srv/sudv/files`). Локальный compose уже есть в `deployment/`.
+Что предстоит реализовать: Android-клиент — «Клиент API» (`IApiClient`, хранение токена) и экраны; compose-файл для боевого развёртывания (по отчёту: контейнеры JVM 21 и PostgreSQL 16, том `/srv/sudv/files`).
 
 ### Подводные камни (уже наступали)
 
@@ -135,6 +139,11 @@ make dev-destroy   # остановить и удалить данные БД
 - `executable-jar` содержит `logback.xml` дважды, поэтому в `logback.xml` стоит `NopStatusListener`, иначе logback при каждом старте печатает свой статус. Есть известный баг toolchain 0.13: `executable-jar` может терять зависимости с одинаковыми именами файлов. Если после обновления зависимостей появится `NoClassDefFoundError` только в jar или в Docker, проверять это в первую очередь.
 - `kotlinx-datetime` на сервере разрешается в вариант `0.8.0-0.6.x-compat` (его требует `exposed-kotlin-datetime`). `LocalDate` и его сериализатор в нём есть, это не ошибка.
 - Плагины компилятора (Metro) и KSP-процессоры подключаются в `settings.kotlin.compilerPlugins` / `settings.kotlin.ksp`, `$libs`-ссылки там работают. Что плагин реально сработал, проверять по сгенерированным классам (`AppGraph$Impl`), а не по успешной сборке.
+- Ktor 3.6.1 кодирует `filename*` в `ContentDisposition` без percent-encoding не-ASCII символов, поэтому заголовок для вложений собирается вручную в `api/ContentDisposition.kt`.
+- `receiveMultipart(formFieldLimit)` ограничивает и файловые части; превышение лимита обрывает запрос необрабатываемым `500` вместо ответа с кодом ошибки. Поэтому размер вложения проверяется по `Content-Length` и ограниченным чтением файловой части, а не лимитом Ktor.
+- `fastexcel` (через `opczip`) пишет нестандартный data descriptor: `ZipInputStream` принимает его за несовпадение размера, хотя архив корректный. Тесты читают XLSX через `ZipFile` (центральный каталог) вместо `ZipInputStream`.
+- В `testApplication` модули из конфига загружаются автоматически при первом HTTP-вызове; если тест обращается к БД до него (например, напрямую к `AppGraph`), нужен явный `startApplication()`.
+- Пул соединений R2DBC нужно закрывать на `ApplicationStopped` (`disposeLater()`, не блокирующий `dispose()`), иначе соединения утекают между тестовыми приложениями и быстро исчерпывают лимит Postgres.
 
 ## Отчёт (`docs/`)
 

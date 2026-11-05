@@ -27,6 +27,12 @@ services:
       DB_URL: r2dbc:postgresql://db:5432/${POSTGRES_DB}
       DB_USER: ${POSTGRES_USER}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?задайте в .env.dev}
+      ADMIN_LOGIN: ${ADMIN_LOGIN:?задайте в .env.dev}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?задайте в .env.dev}
+      FILES_DIR: /srv/sudv/files
+    volumes:
+      - files-data:/srv/sudv/files
     ports:
       - "8080:8080"
     depends_on:
@@ -35,3 +41,4 @@ services:
 
 volumes:
   db-data:
+  files-data:
