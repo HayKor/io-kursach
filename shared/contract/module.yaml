@@ -7,9 +7,13 @@ dependencies:
   - $kotlin.serialization.json: exported
   - $libs.kotlinx.datetime: exported
 
+test-dependencies:
+  - $kotlin.test
+  - $kotlin.test.junit5
+
 apply:
   - ../../common.module-template.yaml
 
 settings:
   kotlin:
-    serialization: json
+    serialization: enabled
