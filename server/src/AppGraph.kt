@@ -22,6 +22,8 @@ import ru.haykor.sudv.db.IEventLogRepository
 import ru.haykor.sudv.db.IPenaltyRepository
 import ru.haykor.sudv.db.IUserRepository
 import ru.haykor.sudv.db.Transactor
+import ru.haykor.sudv.expiry.ExpiryScheduler
+import ru.haykor.sudv.expiry.IExpiryService
 import ru.haykor.sudv.records.IRecordService
 import kotlin.time.Clock
 
@@ -39,6 +41,8 @@ interface AppGraph {
     val penaltyRepository: IPenaltyRepository
     val eventLogRepository: IEventLogRepository
     val recordService: IRecordService
+    val expiryService: IExpiryService
+    val expiryScheduler: ExpiryScheduler
     val bootstrap: Bootstrap
 
     // Built explicitly (rather than via the "r2dbc:pool:" URL scheme) so the pool can be disposed

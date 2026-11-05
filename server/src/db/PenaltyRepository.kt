@@ -51,7 +51,9 @@ interface IPenaltyRepository {
 
     /** Status is set to [PenaltyStatus.ACTIVE]. */
     suspend fun create(request: CreatePenaltyRequest): PenaltyId
-    suspend fun setStatus(id: PenaltyId, status: PenaltyStatus)
+
+    /** Single `UPDATE ... WHERE id = ? AND status = from`; returns whether a row actually changed. */
+    suspend fun changeStatus(id: PenaltyId, from: PenaltyStatus, to: PenaltyStatus): Boolean
     suspend fun saveRemoval(id: PenaltyId, removal: PenaltyRemovalDto)
 }
 
@@ -117,8 +119,8 @@ class PenaltyRepository(private val transactor: Transactor) : IPenaltyRepository
         PenaltyId(id.value)
     }
 
-    override suspend fun setStatus(id: PenaltyId, status: PenaltyStatus) {
-        transactor.tx { Penalties.update({ Penalties.id eq id.value }) { it[Penalties.status] = status } }
+    override suspend fun changeStatus(id: PenaltyId, from: PenaltyStatus, to: PenaltyStatus): Boolean = transactor.tx {
+        Penalties.update({ (Penalties.id eq id.value) and (Penalties.status eq from) }) { it[Penalties.status] = to } > 0
     }
 
     override suspend fun saveRemoval(id: PenaltyId, removal: PenaltyRemovalDto) {

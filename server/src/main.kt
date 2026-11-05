@@ -5,6 +5,7 @@ import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.plugins.calllogging.*
 import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.util.AttributeKey
 import ru.haykor.sudv.api.configureAuthentication
 import ru.haykor.sudv.api.configureStatusPages
 import ru.haykor.sudv.db.createSchema
@@ -14,8 +15,12 @@ fun main(args: Array<String>) {
     io.ktor.server.netty.EngineMain.main(args)
 }
 
+/** Lets tests reach the graph through [Application.attributes], e.g. to call [AppGraph.expiryService] directly. */
+val AppGraphKey = AttributeKey<AppGraph>("AppGraph")
+
 suspend fun Application.module() {
     val graph = createGraphFactory<AppGraph.Factory>().create(environment.config, Clock.System)
+    attributes.put(AppGraphKey, graph)
     createSchema(graph.database)
     graph.bootstrap.run()
 
@@ -32,6 +37,7 @@ suspend fun Application.module() {
     configureStatusPages()
     configureAuthentication(graph.authService, graph.jwtService)
 
-    configureRouting(graph.authService, graph.recordService)
+    configureRouting(graph.authService, graph.recordService, graph.expiryService)
     configureSwagger()
+    graph.expiryScheduler.start(this)
 }

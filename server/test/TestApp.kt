@@ -83,6 +83,7 @@ private suspend fun wipeDatabase() {
 fun apiTest(
     wipe: Boolean = true,
     beforeStart: TestApplicationBuilder.() -> Unit = {},
+    config: Map<String, String> = emptyMap(),
     block: suspend ApplicationTestBuilder.() -> Unit,
 ) = run {
     if (wipe) runBlocking { wipeDatabase() }
@@ -96,6 +97,8 @@ fun apiTest(
             put("files.dir", filesDir)
             put("security.passwordHashIterations", "1000")
             put("expiry.schedulerEnabled", "false")
+            // Applied after the defaults above, so a test can override any of them, e.g. to turn the scheduler on.
+            config.forEach { (key, value) -> put(key, value) }
         }
         beforeStart()
         // The embedded server (and module(), which creates the schema) only starts lazily on the
@@ -105,6 +108,9 @@ fun apiTest(
         block()
     }
 }
+
+/** The running application's Metro graph, for tests that need to call a service directly (e.g. [AppGraph.expiryService]). */
+fun ApplicationTestBuilder.appGraph(): AppGraph = application.attributes[AppGraphKey]
 
 /** An HTTP client that (de)serializes JSON bodies; the default `client` does not. */
 fun ApplicationTestBuilder.api() = createClient {

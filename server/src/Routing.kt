@@ -10,9 +10,10 @@ import ru.haykor.sudv.api.configureEmployeeRoutes
 import ru.haykor.sudv.api.configurePenaltyRoutes
 import ru.haykor.sudv.api.configureUserRoutes
 import ru.haykor.sudv.auth.IAuthService
+import ru.haykor.sudv.expiry.IExpiryService
 import ru.haykor.sudv.records.IRecordService
 
-fun Application.configureRouting(authService: IAuthService, recordService: IRecordService) {
+fun Application.configureRouting(authService: IAuthService, recordService: IRecordService, expiryService: IExpiryService) {
     routing {
         get("/health") {
             call.respondText("OK")
@@ -24,7 +25,7 @@ fun Application.configureRouting(authService: IAuthService, recordService: IReco
             configureUserRoutes(authService)
             configureDepartmentRoutes(recordService)
             configureEmployeeRoutes(recordService)
-            configurePenaltyRoutes(recordService)
+            configurePenaltyRoutes(recordService, expiryService)
         }
     }
 }

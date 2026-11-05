@@ -12,14 +12,16 @@ import ru.haykor.sudv.contract.ApiParams
 import ru.haykor.sudv.contract.ApiRoutes
 import ru.haykor.sudv.contract.CreatePenaltyRequest
 import ru.haykor.sudv.contract.PenaltyFilter
+import ru.haykor.sudv.contract.PenaltyRemovalDto
 import ru.haykor.sudv.contract.PenaltySortField
 import ru.haykor.sudv.contract.SortDirection
 import ru.haykor.sudv.domain.PenaltyId
 import ru.haykor.sudv.domain.PenaltyStatus
 import ru.haykor.sudv.domain.UserRole
+import ru.haykor.sudv.expiry.IExpiryService
 import ru.haykor.sudv.records.IRecordService
 
-fun Route.configurePenaltyRoutes(recordService: IRecordService) {
+fun Route.configurePenaltyRoutes(recordService: IRecordService, expiryService: IExpiryService) {
     get(ApiRoutes.PENALTIES) {
         val actor = call.requireRole(UserRole.HR, UserRole.MANAGER)
         val filter = call.request.queryParameters.toPenaltyFilter()
@@ -34,6 +36,12 @@ fun Route.configurePenaltyRoutes(recordService: IRecordService) {
         val actor = call.requireRole(UserRole.HR, UserRole.MANAGER)
         val id = PenaltyId(call.pathIdValue())
         call.respond(recordService.getPenalty(actor, id))
+    }
+    post(ApiRoutes.PENALTY_REMOVAL) {
+        call.requireRole(UserRole.HR)
+        val id = PenaltyId(call.pathIdValue())
+        val request = call.receive<PenaltyRemovalDto>()
+        call.respond(expiryService.removeEarly(id, request))
     }
 }
 
