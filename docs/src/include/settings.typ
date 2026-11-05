@@ -121,10 +121,10 @@
   show figure.where(kind: table): it => {
     let chapter = counter(heading).get().at(0)
     v(0.5em)
-    align(left,
+    // sticky: подпись не остаётся внизу страницы отдельно от таблицы
+    block(sticky: true, width: 100%, below: 0.5em, align(left,
       text(size: 14pt, style: "italic")[Таблица #chapter.#it.counter.display() — #it.caption.body]
-    )
-    v(0.25em)
+    ))
     it.body
     v(0.5em)
   }
