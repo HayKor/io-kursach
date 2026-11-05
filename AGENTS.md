@@ -92,14 +92,15 @@ make dev-destroy   # остановить и удалить данные БД
 |---|---|
 | `android-app` | Compose + Material 3 (Expressive), Decompose (навигация и компоненты), Metro (DI), Ktor client (OkHttp + kotlinx-json), kotlinx-serialization |
 | `server` | Ktor server (Netty, YAML-конфиг, content negotiation, status pages, call logging, request validation, auth + JWT), Exposed **через R2DBC** (`exposed-r2dbc`, `r2dbc-postgresql`, `r2dbc-pool`), `exposed-kotlin-datetime`, Metro, logback |
-| `shared:contract` | kotlinx-serialization-json (экспортируется) |
+| `shared:contract` | `shared:domain`, kotlinx-serialization-json, kotlinx-datetime (все экспортируются) |
 | `shared:domain` | без внешних зависимостей |
 
 Версии — только в `libs.versions.toml`, в `module.yaml` ссылки вида `$libs.xxx`. Исключение — Compose: используется встроенный каталог `$compose.*`, потому что его версия привязана к настройке `compose` toolchain. У Ktor `applyBom: false`, чтобы версию задавал только каталог.
 
 ### Архитектурные правила
 
-- `shared:contract` и `shared:domain` **не зависят** от Android, Ktor и друг от друга. Это требование отчёта.
+- `shared:contract` и `shared:domain` **не зависят** от Android и Ktor. `contract` зависит от `domain` (и экспортирует его), обратная зависимость запрещена: enum-ы `UserRole`, `PenaltyType`, `PenaltyStatus`, `ReportFormat` живут в `domain`, DTO используют их напрямую.
+- Контракт API — `shared:contract`: адреса в `ApiRoutes` (шаблоны `{id}` для сервера, функции для клиента), имена параметров в `ApiParams`, ошибки — `ErrorResponse` + `ErrorCode` (с HTTP-статусом). Даты — `kotlinx.datetime.LocalDate`, моменты времени — `kotlin.time.Instant`, оба в JSON как ISO-строки. Ответы — `*Dto`, тела запросов — `*Request`.
 - Клиент и сервер общаются только через REST/JSON API, описанное в `shared:contract`.
 - Правила предметной области (статусы, переходы, сроки, валидация) пишутся один раз, в `shared:domain`.
 - DI на обеих сторонах — **Metro** (плагин компилятора, граф проверяется при компиляции). Граф — `AppGraph`: на сервере создаётся в `Application.module()`, на Android хранится в `SudvApplication.graph`.
@@ -121,6 +122,7 @@ make dev-destroy   # остановить и удалить данные БД
 - `ui-tooling` подключён как `runtime-only`. Превью Compose в IDE работает только в **IntelliJ IDEA 2026.2.1+** с актуальным плагином Kotlin Toolchain (исправление KTC-5433). В старых версиях превью не видит runtime-зависимости.
 - В тестах Ktor модули из конфига загружаются только через `testApplication { configure("application.yaml") }`, иначе маршрутов нет (404).
 - `executable-jar` содержит `logback.xml` дважды, поэтому в `logback.xml` стоит `NopStatusListener`, иначе logback при каждом старте печатает свой статус. Есть известный баг toolchain 0.13: `executable-jar` может терять зависимости с одинаковыми именами файлов. Если после обновления зависимостей появится `NoClassDefFoundError` только в jar или в Docker, проверять это в первую очередь.
+- `kotlinx-datetime` на сервере разрешается в вариант `0.8.0-0.6.x-compat` (его требует `exposed-kotlin-datetime`). `LocalDate` и его сериализатор в нём есть, это не ошибка.
 - Плагины компилятора (Metro) и KSP-процессоры подключаются в `settings.kotlin.compilerPlugins` / `settings.kotlin.ksp`, `$libs`-ссылки там работают. Что плагин реально сработал, проверять по сгенерированным классам (`AppGraph$Impl`), а не по успешной сборке.
 
 ## Отчёт (`docs/`)
