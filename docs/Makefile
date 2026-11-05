@@ -5,6 +5,7 @@
 #  make full       — итоговый документ        (src/index.typ)
 #  make p12        — практики 1–2              (src/practices_1-2.typ)
 #  make p34        — практики 3–4              (src/practices_3-4.typ)
+#  make p69        — практики 6–9              (src/practices_6-9.typ)
 #  make watch-p34  — пересборка при изменениях (также watch-p12, watch-full)
 #  make diagrams   — экспорт схем draw.io в src/img/*.pdf (делается и само)
 #  make release    — скопировать PDF в output/ с именами для сдачи
@@ -22,19 +23,22 @@ TFLAGS := --root $(SRC)
 DOC_full := index
 DOC_p12  := practices_1-2
 DOC_p34  := practices_3-4
-TARGETS  := full p12 p34
+DOC_p69  := practices_6-9
+TARGETS  := full p12 p34 p69
 
 # имена файлов для сдачи
 REL_full := Багинян_А_В_дисц-взыскания.pdf
 REL_p12  := Багинян_А_В_практики_1-2.pdf
 REL_p34  := Багинян_А_В_практики_3-4.pdf
+REL_p69  := Багинян_А_В_практики_6-9.pdf
 
 PDFS := $(foreach t,$(TARGETS),$(BUILD)/$(DOC_$(t)).pdf)
 
 # схемы draw.io: каждая вкладка -> src/img/<имя вкладки>.pdf
-DIAGRAMS   := diagrams/practices_3-4.drawio
-IMG        := $(SRC)/img
-DIAG_STAMP := $(BUILD)/diagrams.stamp
+# diagrams/<имя>.drawio экспортируется при изменении (метка build/<имя>.stamp)
+DIAGRAMS    := $(wildcard diagrams/*.drawio)
+DIAG_STAMPS := $(patsubst diagrams/%.drawio,$(BUILD)/%.stamp,$(DIAGRAMS))
+IMG         := $(SRC)/img
 
 .PHONY: all clean release diagrams $(TARGETS) $(addprefix watch-,$(TARGETS))
 
@@ -50,12 +54,14 @@ $(BUILD)/%.pdf: $(SRC)/%.typ | $(BUILD)
 -include $(wildcard $(BUILD)/*.d)
 
 # документы со схемами пересобираются после их экспорта
-$(BUILD)/$(DOC_full).pdf $(BUILD)/$(DOC_p34).pdf: $(DIAG_STAMP)
+$(BUILD)/$(DOC_full).pdf: $(DIAG_STAMPS)
+$(BUILD)/$(DOC_p34).pdf: $(BUILD)/practices_3-4.stamp
+$(BUILD)/$(DOC_p69).pdf: $(BUILD)/practices_6-7.stamp $(BUILD)/practices_8-9.stamp
 
-diagrams: $(DIAG_STAMP)
+diagrams: $(DIAG_STAMPS)
 
-$(DIAG_STAMP): $(DIAGRAMS) diagrams/export.sh | $(BUILD)
-	./diagrams/export.sh $(DIAGRAMS) $(IMG)
+$(BUILD)/%.stamp: diagrams/%.drawio diagrams/export.sh | $(BUILD)
+	./diagrams/export.sh $< $(IMG)
 	touch $@
 
 $(foreach t,$(TARGETS),$(eval watch-$(t): ; \
@@ -68,5 +74,5 @@ $(BUILD) $(OUTPUT):
 	mkdir -p $@
 
 clean:
-	rm -f $(BUILD)/*.pdf $(BUILD)/*.d $(DIAG_STAMP)
+	rm -f $(BUILD)/*.pdf $(BUILD)/*.d $(BUILD)/*.stamp
 	$(foreach t,$(TARGETS),rm -f "$(OUTPUT)/$(REL_$(t))";)
