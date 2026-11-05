@@ -1,10 +1,10 @@
-package ru.haykor.sudv
+package ru.haykor.sudv.server
 
 import dev.zacsweers.metro.createGraphFactory
 import io.ktor.server.application.*
 import io.ktor.server.routing.*
 import io.ktor.util.AttributeKey
-import ru.haykor.sudv.db.createSchema
+import ru.haykor.sudv.server.core.database.createSchema
 import kotlin.time.Clock
 
 fun main(args: Array<String>) {
@@ -17,7 +17,7 @@ val AppGraphKey = AttributeKey<AppGraph>("AppGraph")
 suspend fun Application.module() {
     val graph = createGraphFactory<AppGraph.Factory>().create(environment.config, Clock.System)
     attributes.put(AppGraphKey, graph)
-    createSchema(graph.database)
+    createSchema(graph.database, graph.tables)
     graph.bootstrap.run()
 
     // disposeLater() + subscribe() instead of dispose(), which blocks the calling thread until
@@ -30,5 +30,4 @@ suspend fun Application.module() {
     routing {
         graph.routes.forEach { with(it) { register() } }
     }
-    graph.expiryScheduler.start(this)
 }

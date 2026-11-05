@@ -1,4 +1,4 @@
-package ru.haykor.sudv
+package ru.haykor.sudv.server
 
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.DependencyGraph
@@ -10,18 +10,17 @@ import io.r2dbc.pool.ConnectionPoolConfiguration
 import io.r2dbc.spi.ConnectionFactories
 import io.r2dbc.spi.ConnectionFactoryOptions
 import kotlinx.datetime.TimeZone
+import org.jetbrains.exposed.v1.core.Table
 import org.jetbrains.exposed.v1.core.vendors.PostgreSQLDialect
 import org.jetbrains.exposed.v1.r2dbc.R2dbcDatabase
 import org.jetbrains.exposed.v1.r2dbc.R2dbcDatabaseConfig
-import ru.haykor.sudv.api.PluginInstaller
-import ru.haykor.sudv.api.RouteRegistrar
-import ru.haykor.sudv.config.AppConfig
-import ru.haykor.sudv.config.Bootstrap
-import ru.haykor.sudv.db.IPenaltyRepository
-import ru.haykor.sudv.db.IReportRepository
-import ru.haykor.sudv.db.Transactor
-import ru.haykor.sudv.expiry.ExpiryScheduler
-import ru.haykor.sudv.expiry.IExpiryService
+import ru.haykor.sudv.server.core.config.AppConfig
+import ru.haykor.sudv.server.core.database.Transactor
+import ru.haykor.sudv.server.core.http.PluginInstaller
+import ru.haykor.sudv.server.core.http.RouteRegistrar
+import ru.haykor.sudv.server.expiry.domain.IExpiryService
+import ru.haykor.sudv.server.records.domain.IPenaltyRepository
+import ru.haykor.sudv.server.reports.domain.IReportRepository
 import kotlin.time.Clock
 
 /** Accessors only tests use (through [AppGraphKey]); production code gets dependencies by constructor injection. */
@@ -39,7 +38,7 @@ interface AppGraph : AppGraphTestAccessors {
     val bootstrap: Bootstrap
     val plugins: Set<PluginInstaller>
     val routes: Set<RouteRegistrar>
-    val expiryScheduler: ExpiryScheduler
+    val tables: Set<Table>
 
     // Built explicitly (rather than via the "r2dbc:pool:" URL scheme) so the pool can be disposed
     // on application shutdown; otherwise every module() start leaks one pool's worth of connections.

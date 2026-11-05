@@ -47,4 +47,4 @@ settings:
           openApiEnabled: true
           openApiCodeInference: true
   jvm:
-    mainClass: ru.haykor.sudv.MainKt
+    mainClass: ru.haykor.sudv.server.MainKt

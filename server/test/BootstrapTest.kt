@@ -1,4 +1,4 @@
-package ru.haykor.sudv
+package ru.haykor.sudv.server
 
 import io.ktor.client.request.get
 import io.ktor.client.request.header
@@ -7,10 +7,10 @@ import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.flow.toList
 import org.jetbrains.exposed.v1.r2dbc.selectAll
 import org.jetbrains.exposed.v1.r2dbc.transactions.suspendTransaction
-import ru.haykor.sudv.contract.ApiRoutes
-import ru.haykor.sudv.db.Departments
-import ru.haykor.sudv.db.Employees
-import ru.haykor.sudv.db.Users
+import ru.haykor.sudv.server.auth.data.Users
+import ru.haykor.sudv.server.records.data.Departments
+import ru.haykor.sudv.server.records.data.Employees
+import ru.haykor.sudv.shared.contract.ApiRoutes
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

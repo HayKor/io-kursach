@@ -1,4 +1,4 @@
-package ru.haykor.sudv.domain
+package ru.haykor.sudv.shared.domain
 
 object AttachmentRules {
     const val MAX_BYTES: Long = 10L * 1024 * 1024

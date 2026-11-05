@@ -45,10 +45,11 @@ refs/               методички и задания к практическ
 
 ## Проект (код)
 
-Исходники лежат прямо в `src/` и `test/` модуля, без вложенных папок по пакету (Kotlin не требует совпадения папок с пакетом). Новые файлы класть так же. Пакеты:
-- `shared:domain` — `ru.haykor.sudv.domain`;
-- `shared:contract` — `ru.haykor.sudv.contract`;
-- `server` и `android-app` — `ru.haykor.sudv`.
+Пакет отражает имя модуля: `ru.haykor.sudv.<модуль>`. Исходники лежат прямо в `src/` и `test/` модуля, без папок `ru/haykor/sudv/…` (Kotlin не требует совпадения папок с пакетом); подпапки внутри `src/` повторяют оставшуюся часть пакета, например `server/src/records/data/` — это `ru.haykor.sudv.server.records.data`. Пакеты:
+- `shared:domain` — `ru.haykor.sudv.shared.domain`;
+- `shared:contract` — `ru.haykor.sudv.shared.contract`;
+- `server` — `ru.haykor.sudv.server`;
+- `android-app` — пока `ru.haykor.sudv` (под новое правило ещё не переведён).
 
 ### Сборка и запуск
 
@@ -104,7 +105,7 @@ make dev-destroy   # остановить и удалить данные БД
 
 ### OpenAPI / Swagger
 
-- Swagger UI: `http://localhost:8080/docs`, спецификация: `/docs/documentation.yaml` (отдаётся в JSON). Настройка в `server/src/api/SwaggerRoutes.kt`.
+- Swagger UI: `http://localhost:8080/docs`, спецификация: `/docs/documentation.yaml` (отдаётся в JSON). Настройка в `server/src/core/http/SwaggerRoutes.kt`.
 - Пути, методы и схемы выводит **плагин компилятора Ktor** (`io.ktor.ktor-compiler-plugin`, опции `openApiEnabled`, `openApiCodeInference`) по коду маршрутов: `call.receive<T>()` / `call.respond<T>()`. В toolchain нет встроенной настройки — плагин подключён вручную в `server/module.yaml` через `compilerPlugins`, как Metro.
 - Если вывода не хватает, маршрут дополняется `.describe { … }` (экспериментальное API, `@OptIn(ExperimentalKtorApi::class)`).
 - Группы в Swagger UI задаёт KDoc `/** Tag: Employees */` над **каждым** эндпоинтом (`get`/`post`/…). На обёртку его вешать нельзя: на `authenticate` плагин его не читает, а `route("")` возвращает родительский маршрут, и тег достаётся всем группам сразу.
@@ -118,8 +119,16 @@ make dev-destroy   # остановить и удалить данные БД
 - Клиент и сервер общаются только через REST/JSON API, описанное в `shared:contract`.
 - Правила предметной области (статусы, переходы, сроки, валидация) пишутся один раз, в `shared:domain`; срок погашения взыскания вычисляется только через `PenaltyRules.expiryDate` — ни в SQL, ни где-либо ещё.
 - DI на обеих сторонах — **Metro** (плагин компилятора, граф проверяется при компиляции). Граф — `AppGraph`: на сервере он создаётся в `Application.module()` через `createGraphFactory<AppGraph.Factory>().create(environment.config, Clock.System)`, на Android он хранится в `SudvApplication.graph`.
-- Маршруты сервера регистрируются сами: каждая группа — класс `@Inject @ContributesIntoSet(AppScope::class)`, реализующий `RouteRegistrar` (`api/RouteRegistrar.kt`); зависимости приходят в конструктор, `module()` монтирует весь `Set<RouteRegistrar>` из графа. Новая группа маршрутов не требует правок в `AppGraph` и `main.kt`. Плагины Ktor устроены так же: `PluginInstaller` (`api/PluginInstaller.kt`) с полем `order`, порядок установки — порядок значений `PluginOrder`; `PluginInstallerTest` проверяет, что у каждого значения ровно один установщик. В `AppGraph` объявлено только то, что нужно `module()`; то, что нужно лишь тестам, вынесено в `AppGraphTestAccessors`.
-- Пакеты сервера `ru.haykor.sudv.<компонент>` лежат в одноимённых подпапках `server/src/<компонент>/`: `api` («Веб-API»), `auth` («Управление доступом»), `records` («Учёт сотрудников и нарушений»), `expiry` («Контроль сроков»), `reports` («Отчётность»), `files` («Хранилище файлов»), `db` («Доступ к данным»), `config` (конфигурация и bootstrap).
+- Маршруты сервера регистрируются сами: каждая группа — класс `@Inject @ContributesIntoSet(AppScope::class)`, реализующий `RouteRegistrar` (`core/http/RouteRegistrar.kt`); зависимости приходят в конструктор, `module()` монтирует весь `Set<RouteRegistrar>` из графа. Новая группа маршрутов не требует правок в `AppGraph` и `main.kt`. Плагины Ktor устроены так же: `PluginInstaller` (`core/http/PluginInstaller.kt`) с полем `order`, порядок установки — порядок значений `PluginOrder`; `PluginInstallerTest` проверяет, что у каждого значения ровно один установщик. В `AppGraph` объявлено только то, что нужно `module()`; то, что нужно лишь тестам, вынесено в `AppGraphTestAccessors`.
+- Сервер разбит по фичам, фича — компонент из отчёта (гл. 06): `auth` («Управление доступом»), `records` («Учёт сотрудников и нарушений»), `expiry` («Контроль сроков»), `reports` («Отчётность»). Внутри фичи три слоя:
+  - `presentation` — маршруты и плагины Ktor;
+  - `domain` — сервисы и интерфейсы репозиториев, без Ktor и Exposed;
+  - `data` — таблицы Exposed и реализации репозиториев (`@ContributesBinding` к интерфейсу из `domain`).
+
+  `presentation` и `data` зависят от `domain`, но не друг от друга. «Веб-API» из отчёта — это слои `presentation`, «Доступ к данным» — слои `data`.
+- Общее для фич лежит в `core/`: `config`, `database` (`Transactor`, создание схемы), `error` (`ApiException`), `files` («Хранилище файлов»), `http` (плагины, `RouteRegistrar`, Swagger), `security` (`CurrentUser`, `requireRole`). `core` от фич не зависит; фичи зависят от `core` и только в одну сторону друг от друга: `auth`, `expiry` и `reports` — от `records`. В корне пакета `main.kt`, `AppGraph` и `Bootstrap` (он затрагивает несколько фич).
+- Таблицы каждая фича отдаёт в граф сама (`@ElementsIntoSet` в `data/*Tables.kt`), `createSchema` создаёт весь `Set<Table>`. Поэтому фичу можно вынести в отдельный модуль, не трогая `core`.
+- Слой `domain` на сервере не путать с модулем `shared:domain`: там чистые правила (сроки, валидация), здесь сервисы, которые их применяют.
 - Права: роль проверяют маршруты (`requireRole`), ограничение `MANAGER` на своё подразделение — сервисы. Вкратце: `ADMIN` управляет учётными записями и может создавать сотрудников (иначе первому кадровику не к кому привязать учётную запись); `HR` работает с сотрудниками, взысканиями, вложениями и отчётами; `MANAGER` только читает сотрудников, взыскания и вложения своего подразделения. `MANAGER` не может указать чужое подразделение даже параметром запроса — такой запрос и обращение по id к чужим данным отклоняются `FORBIDDEN`, а не отфильтровываются молча.
 - БД: только Exposed **DSL** (не DAO — `exposed-dao-r2dbc` экспериментальный), все запросы внутри `suspendTransaction { }`. Блокирующий `transaction { }` — это JDBC, не использовать.
 - Room на Android **не используется**: от него отказались намеренно.
@@ -127,7 +136,7 @@ make dev-destroy   # остановить и удалить данные БД
 
 ### Текущее состояние
 
-Сервер реализует компоненты из отчёта (гл. 06–07): «Веб-API» (маршруты в `api/`), «Управление доступом» (`IAuthService`, JWT, хеширование паролей, bootstrap первого `ADMIN`), «Учёт сотрудников и нарушений» (`IRecordService`), «Контроль сроков» (`IExpiryService` и ежедневный планировщик), «Отчётность» (`IReportService`, экспорт в XLSX/CSV, архив отчётов), «Хранилище файлов» (`IFileStorage`) и «Доступ к данным» (репозитории `I*Repository` на Exposed/R2DBC). Схема БД создаётся при старте, миграций нет. Swagger UI — на `/docs`. Локальный запуск через `deployment/docker-compose.local.yml` и `Makefile` сохраняет данные и файлы вложений в именованных томах между перезапусками.
+Сервер реализует компоненты из отчёта (гл. 06–07): «Веб-API» (слои `presentation`), «Управление доступом» (`IAuthService`, JWT, хеширование паролей, bootstrap первого `ADMIN`), «Учёт сотрудников и нарушений» (`IRecordService`), «Контроль сроков» (`IExpiryService` и ежедневный планировщик), «Отчётность» (`IReportService`, экспорт в XLSX/CSV, архив отчётов), «Хранилище файлов» (`IFileStorage`) и «Доступ к данным» (репозитории `I*Repository` на Exposed/R2DBC). Схема БД создаётся при старте, миграций нет. Swagger UI — на `/docs`. Локальный запуск через `deployment/docker-compose.local.yml` и `Makefile` сохраняет данные и файлы вложений в именованных томах между перезапусками.
 
 Что предстоит реализовать: Android-клиент — «Клиент API» (`IApiClient`, хранение токена) и экраны; compose-файл для боевого развёртывания (по отчёту: контейнеры JVM 21 и PostgreSQL 16, том `/srv/sudv/files`).
 
@@ -141,7 +150,7 @@ make dev-destroy   # остановить и удалить данные БД
 - `executable-jar` содержит `logback.xml` дважды, поэтому в `logback.xml` стоит `NopStatusListener`, иначе logback при каждом старте печатает свой статус. Есть известный баг toolchain 0.13: `executable-jar` может терять зависимости с одинаковыми именами файлов. Если после обновления зависимостей появится `NoClassDefFoundError` только в jar или в Docker, проверять это в первую очередь.
 - `kotlinx-datetime` на сервере разрешается в вариант `0.8.0-0.6.x-compat` (его требует `exposed-kotlin-datetime`). `LocalDate` и его сериализатор в нём есть, это не ошибка.
 - Плагины компилятора (Metro) и KSP-процессоры подключаются в `settings.kotlin.compilerPlugins` / `settings.kotlin.ksp`, `$libs`-ссылки там работают. Что плагин реально сработал, проверять по сгенерированным классам (`AppGraph$Impl`), а не по успешной сборке.
-- Ktor 3.6.1 кодирует `filename*` в `ContentDisposition` без percent-encoding не-ASCII символов, поэтому заголовок для вложений собирается вручную в `api/ContentDisposition.kt`.
+- Ktor 3.6.1 кодирует `filename*` в `ContentDisposition` без percent-encoding не-ASCII символов, поэтому заголовок для вложений собирается вручную в `core/http/ContentDisposition.kt`.
 - `receiveMultipart(formFieldLimit)` ограничивает и файловые части; превышение лимита обрывает запрос необрабатываемым `500` вместо ответа с кодом ошибки. Поэтому размер вложения проверяется по `Content-Length` и ограниченным чтением файловой части, а не лимитом Ktor.
 - `fastexcel` (через `opczip`) пишет нестандартный data descriptor: `ZipInputStream` принимает его за несовпадение размера, хотя архив корректный. Тесты читают XLSX через `ZipFile` (центральный каталог) вместо `ZipInputStream`.
 - В `testApplication` модули из конфига загружаются автоматически при первом HTTP-вызове; если тест обращается к БД до него (например, напрямую к `AppGraph`), нужен явный `startApplication()`.

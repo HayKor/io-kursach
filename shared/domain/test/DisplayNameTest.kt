@@ -1,4 +1,4 @@
-package ru.haykor.sudv.domain
+package ru.haykor.sudv.shared.domain
 
 import kotlin.test.Test
 import kotlin.test.assertEquals

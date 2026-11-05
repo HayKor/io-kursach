@@ -1,4 +1,4 @@
-package ru.haykor.sudv
+package ru.haykor.sudv.server
 
 import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -28,19 +28,19 @@ import org.jetbrains.exposed.v1.r2dbc.insertAndGetId
 import org.jetbrains.exposed.v1.r2dbc.selectAll
 import org.jetbrains.exposed.v1.r2dbc.transactions.suspendTransaction
 import org.testcontainers.postgresql.PostgreSQLContainer
-import ru.haykor.sudv.contract.ApiRoutes
-import ru.haykor.sudv.contract.CreatePenaltyRequest
-import ru.haykor.sudv.contract.CreateUserRequest
-import ru.haykor.sudv.contract.DepartmentDto
-import ru.haykor.sudv.contract.LoginRequest
-import ru.haykor.sudv.contract.LoginResponse
-import ru.haykor.sudv.contract.PenaltyDto
-import ru.haykor.sudv.db.Departments
-import ru.haykor.sudv.db.Employees
-import ru.haykor.sudv.domain.DepartmentId
-import ru.haykor.sudv.domain.EmployeeId
-import ru.haykor.sudv.domain.PenaltyType
-import ru.haykor.sudv.domain.UserRole
+import ru.haykor.sudv.server.records.data.Departments
+import ru.haykor.sudv.server.records.data.Employees
+import ru.haykor.sudv.shared.contract.ApiRoutes
+import ru.haykor.sudv.shared.contract.CreatePenaltyRequest
+import ru.haykor.sudv.shared.contract.CreateUserRequest
+import ru.haykor.sudv.shared.contract.DepartmentDto
+import ru.haykor.sudv.shared.contract.LoginRequest
+import ru.haykor.sudv.shared.contract.LoginResponse
+import ru.haykor.sudv.shared.contract.PenaltyDto
+import ru.haykor.sudv.shared.domain.DepartmentId
+import ru.haykor.sudv.shared.domain.EmployeeId
+import ru.haykor.sudv.shared.domain.PenaltyType
+import ru.haykor.sudv.shared.domain.UserRole
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.io.path.createTempDirectory
 import kotlin.time.Clock
@@ -119,6 +119,7 @@ fun ApplicationTestBuilder.api() = createClient {
 
 /** Default admin credentials, matching `application.yaml`; [apiTest] does not override `ADMIN_LOGIN`/`ADMIN_PASSWORD`. */
 private const val DEFAULT_ADMIN_LOGIN = "admin"
+
 private const val DEFAULT_ADMIN_PASSWORD = "admin12345"
 
 private val testSequence = AtomicInteger()
@@ -186,7 +187,7 @@ suspend fun ApplicationTestBuilder.createUser(role: UserRole, departmentName: St
 
 /**
  * Creates a penalty for [employeeId] through `POST` [ApiRoutes.PENALTIES]. Dates default to a week-long window
- * ending 10 days before today so the call stays valid under [ru.haykor.sudv.domain.Validation.penalty] regardless
+ * ending 10 days before today so the call stays valid under [ru.haykor.sudv.shared.domain.Validation.penalty] regardless
  * of when the test suite runs. [hrToken] defaults to a freshly created HR account when not supplied.
  */
 suspend fun ApplicationTestBuilder.createPenalty(

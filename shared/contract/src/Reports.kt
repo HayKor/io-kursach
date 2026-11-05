@@ -1,10 +1,10 @@
-package ru.haykor.sudv.contract
+package ru.haykor.sudv.shared.contract
 
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.Serializable
-import ru.haykor.sudv.domain.DepartmentId
-import ru.haykor.sudv.domain.ReportFormat
-import ru.haykor.sudv.domain.ReportId
+import ru.haykor.sudv.shared.domain.DepartmentId
+import ru.haykor.sudv.shared.domain.ReportFormat
+import ru.haykor.sudv.shared.domain.ReportId
 import kotlin.time.Instant
 
 /** [penalties] are in chronological order. */

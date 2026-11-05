@@ -1,4 +1,4 @@
-package ru.haykor.sudv.domain
+package ru.haykor.sudv.shared.domain
 
 val PenaltyType.displayName: String
     get() = when (this) {
