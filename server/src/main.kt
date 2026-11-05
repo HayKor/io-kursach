@@ -32,6 +32,6 @@ suspend fun Application.module() {
     configureStatusPages()
     configureAuthentication(graph.authService, graph.jwtService)
 
-    configureRouting(graph.authService, graph.employeeRepository)
+    configureRouting(graph.authService, graph.recordService)
     configureSwagger()
 }

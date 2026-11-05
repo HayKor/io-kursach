@@ -18,8 +18,11 @@ import ru.haykor.sudv.auth.JwtService
 import ru.haykor.sudv.config.AppConfig
 import ru.haykor.sudv.config.Bootstrap
 import ru.haykor.sudv.db.IEmployeeRepository
+import ru.haykor.sudv.db.IEventLogRepository
+import ru.haykor.sudv.db.IPenaltyRepository
 import ru.haykor.sudv.db.IUserRepository
 import ru.haykor.sudv.db.Transactor
+import ru.haykor.sudv.records.IRecordService
 import kotlin.time.Clock
 
 @DependencyGraph(AppScope::class)
@@ -33,6 +36,9 @@ interface AppGraph {
     val jwtService: JwtService
     val userRepository: IUserRepository
     val employeeRepository: IEmployeeRepository
+    val penaltyRepository: IPenaltyRepository
+    val eventLogRepository: IEventLogRepository
+    val recordService: IRecordService
     val bootstrap: Bootstrap
 
     // Built explicitly (rather than via the "r2dbc:pool:" URL scheme) so the pool can be disposed

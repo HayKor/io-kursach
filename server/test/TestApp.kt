@@ -3,6 +3,7 @@ package ru.haykor.sudv
 import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.HttpRequestBuilder
+import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -16,6 +17,11 @@ import io.ktor.server.testing.testApplication
 import io.r2dbc.spi.ConnectionFactoryOptions
 import kotlinx.coroutines.flow.singleOrNull
 import kotlinx.coroutines.runBlocking
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.minus
+import kotlinx.datetime.todayIn
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.r2dbc.R2dbcDatabase
 import org.jetbrains.exposed.v1.r2dbc.insertAndGetId
@@ -23,15 +29,21 @@ import org.jetbrains.exposed.v1.r2dbc.selectAll
 import org.jetbrains.exposed.v1.r2dbc.transactions.suspendTransaction
 import org.testcontainers.postgresql.PostgreSQLContainer
 import ru.haykor.sudv.contract.ApiRoutes
+import ru.haykor.sudv.contract.CreatePenaltyRequest
 import ru.haykor.sudv.contract.CreateUserRequest
+import ru.haykor.sudv.contract.DepartmentDto
 import ru.haykor.sudv.contract.LoginRequest
 import ru.haykor.sudv.contract.LoginResponse
+import ru.haykor.sudv.contract.PenaltyDto
 import ru.haykor.sudv.db.Departments
 import ru.haykor.sudv.db.Employees
+import ru.haykor.sudv.domain.DepartmentId
 import ru.haykor.sudv.domain.EmployeeId
+import ru.haykor.sudv.domain.PenaltyType
 import ru.haykor.sudv.domain.UserRole
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.io.path.createTempDirectory
+import kotlin.time.Clock
 
 /** A single Postgres container for the whole test run, started lazily on first use. */
 object TestDatabase {
@@ -119,7 +131,11 @@ suspend fun ApplicationTestBuilder.login(login: String, password: String): Strin
 
 suspend fun ApplicationTestBuilder.adminToken(): String = login(DEFAULT_ADMIN_LOGIN, DEFAULT_ADMIN_PASSWORD)
 
-/** Writes an employee directly to the database; employee HTTP routes do not exist until phase 4. */
+/** Looks up a bootstrapped department (see `application.yaml`'s `bootstrap.departments`) by its exact name. */
+suspend fun ApplicationTestBuilder.departmentId(name: String): DepartmentId =
+    api().get(ApiRoutes.DEPARTMENTS) { bearer(adminToken()) }.body<List<DepartmentDto>>().single { it.name == name }.id
+
+/** Writes an employee directly to the database: [createUser] needs an employee before any HR token exists. */
 suspend fun ApplicationTestBuilder.createEmployee(
     personnelNumber: String = "EMP-${testSequence.incrementAndGet()}",
     lastName: String = "Иванов",
@@ -160,4 +176,26 @@ suspend fun ApplicationTestBuilder.createUser(role: UserRole, departmentName: St
     }
 
     return login(loginName, password)
+}
+
+/**
+ * Creates a penalty for [employeeId] through `POST` [ApiRoutes.PENALTIES]. Dates default to a week-long window
+ * ending 10 days before today so the call stays valid under [ru.haykor.sudv.domain.Validation.penalty] regardless
+ * of when the test suite runs. [hrToken] defaults to a freshly created HR account when not supplied.
+ */
+suspend fun ApplicationTestBuilder.createPenalty(
+    employeeId: EmployeeId,
+    type: PenaltyType = PenaltyType.REMARK,
+    orderDate: LocalDate = Clock.System.todayIn(TimeZone.currentSystemDefault()).minus(10, DateTimeUnit.DAY),
+    violationDate: LocalDate = orderDate.minus(7, DateTimeUnit.DAY),
+    description: String = "Опоздание на рабочее место",
+    orderNumber: String = "ORD-${testSequence.incrementAndGet()}",
+    hrToken: String? = null,
+): PenaltyDto {
+    val token = hrToken ?: createUser(UserRole.HR)
+    return api().post(ApiRoutes.PENALTIES) {
+        bearer(token)
+        contentType(ContentType.Application.Json)
+        setBody(CreatePenaltyRequest(employeeId, type, violationDate, description, orderNumber, orderDate))
+    }.body()
 }
