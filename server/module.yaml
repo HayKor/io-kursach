@@ -13,6 +13,7 @@ dependencies:
   - $libs.ktor.server.contentNegotiation
   - $libs.ktor.serialization.kotlinx.json
   - $libs.ktor.server.statusPages
+  - $libs.ktor.server.cors
   - $libs.ktor.server.callLogging
   - $libs.ktor.server.auth
   - $libs.ktor.server.auth.jwt

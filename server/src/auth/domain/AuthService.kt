@@ -21,6 +21,7 @@ interface IAuthService {
 
     /** Called from the JWT `validate` block on every request. */
     suspend fun authenticate(id: UserId): CurrentUser?
+    suspend fun currentUser(actor: CurrentUser): UserDto
     suspend fun listUsers(): List<UserDto>
     suspend fun createUser(request: CreateUserRequest): UserDto
     suspend fun setBlocked(actor: CurrentUser, id: UserId, blocked: Boolean): UserDto
@@ -62,6 +63,9 @@ class AuthService(
         if (authenticated.isBlocked) return null
         return CurrentUser(authenticated.id, authenticated.role, authenticated.departmentId)
     }
+
+    override suspend fun currentUser(actor: CurrentUser): UserDto =
+        userRepository.findById(actor.id) ?: throw ApiException(ErrorCode.UNAUTHORIZED, "Требуется авторизация")
 
     override suspend fun listUsers(): List<UserDto> = userRepository.findAll()
 

@@ -14,6 +14,10 @@ database:
 app:
     timeZone: "$APP_TIME_ZONE:Europe/Moscow"
 
+cors:
+    # Comma-separated origins of browser clients; the web client's dev server runs on 8081 (8080 is this server).
+    allowedOrigins: "$CORS_ORIGINS:http://localhost:8081"
+
 security:
     jwt:
         secret: "$JWT_SECRET:dev-only-secret-change-me"

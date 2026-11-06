@@ -31,6 +31,7 @@ services:
       ADMIN_LOGIN: ${ADMIN_LOGIN:?задайте в .env.dev}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?задайте в .env.dev}
       FILES_DIR: /srv/sudv/files
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8081}
     volumes:
       - files-data:/srv/sudv/files
     ports:

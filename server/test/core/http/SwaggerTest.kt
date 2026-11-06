@@ -32,6 +32,7 @@ class SwaggerTest {
         val expected = mapOf(
             "GET /health" to "Health",
             "POST ${ApiRoutes.LOGIN}" to "Auth",
+            "GET ${ApiRoutes.ME}" to "Auth",
             "GET ${ApiRoutes.USERS}" to "Users",
             "GET ${ApiRoutes.DEPARTMENTS}" to "Departments",
             "GET ${ApiRoutes.EMPLOYEES}" to "Employees",
