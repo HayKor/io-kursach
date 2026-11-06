@@ -16,7 +16,8 @@ app:
 
 cors:
     # Comma-separated origins of browser clients; the web client's dev server runs on 8081 (8080 is this server).
-    allowedOrigins: "$CORS_ORIGINS:http://localhost:8081"
+    # Both spellings: the browser sends the address as typed, and `./kotlin run` prints the 127.0.0.1 one.
+    allowedOrigins: "$CORS_ORIGINS:http://localhost:8081,http://127.0.0.1:8081"
 
 security:
     jwt:
