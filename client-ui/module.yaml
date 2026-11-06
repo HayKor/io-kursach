@@ -11,6 +11,11 @@ dependencies:
   - $compose.preview
   - $libs.decompose: exported
   - $libs.decompose.extensions.compose: exported
+  - $libs.essenty.lifecycle.coroutines
+
+test-dependencies:
+  - $kotlin.test
+  - $libs.kotlinx.coroutines.test
 
 dependencies@android: 
   - $compose.uiTooling

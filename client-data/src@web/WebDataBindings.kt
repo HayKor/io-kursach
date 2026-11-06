@@ -25,7 +25,7 @@ object WebDataBindings {
         ),
     )
 
-    // CIO is not an option here: its sockets need Node.js and fail in a browser.
+    // Js (the Fetch API) ships with ktor-client-core here; CIO is not an option: its sockets need Node.js and fail in a browser.
     @Provides
     @SingleIn(AppScope::class)
     fun httpClientEngine(): HttpClientEngine = Js.create()

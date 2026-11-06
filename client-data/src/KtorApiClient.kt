@@ -193,8 +193,9 @@ internal class KtorApiClient(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            // Engines report an unreachable server with different exception types (IOException, JS errors).
+        } catch (e: Throwable) {
+            // Throwable, not Exception: on Wasm the Js engine reports a failed fetch (server down, CORS refusal)
+            // as kotlin.Error("Fail to fetch"), which would otherwise escape and leave the UI waiting forever.
             throw NetworkException(e)
         }
         if (!response.status.isSuccess()) throw response.toApiException()

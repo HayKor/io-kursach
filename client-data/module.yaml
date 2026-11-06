@@ -7,10 +7,11 @@ description: "Contains common & platform implementations"
 dependencies:
   - //client-domain
   - //shared/contract
-  - $libs.datastore.core
-  - $libs.datastore.preferences.core
+  # Exported: these types appear in binding signatures, and the graph in an entry point has to resolve them (see AGENTS.md).
+  - $libs.datastore.core: exported
+  - $libs.datastore.preferences.core: exported
   # Ktor
-  - $libs.ktor.client.core
+  - $libs.ktor.client.core: exported
   - $libs.ktor.client.contentNegotiation
   - $libs.ktor.serialization.kotlinx.json
   - $libs.ktor.client.encoding
@@ -22,9 +23,6 @@ test-dependencies:
 
 dependencies@android:
   - $libs.ktor.client.okhttp
-
-dependencies@web:
-  - $libs.ktor.client.js
 
 apply:
   - //common.module-template.yaml

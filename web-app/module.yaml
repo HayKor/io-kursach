@@ -13,3 +13,7 @@ apply:
 settings:
   compose:
     enabled: true
+  kotlin:
+    # Kotlin/Wasm links modules by IR signatures; by default an unresolved call only throws IrLinkageError at runtime.
+    freeCompilerArgs:
+      - -Xpartial-linkage-loglevel=ERROR

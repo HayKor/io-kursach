@@ -29,7 +29,7 @@ import ru.haykor.sudv.shared.domain.UserId
 
 /**
  * The only way the UI talks to the server; one method per route in [ru.haykor.sudv.shared.contract.ApiRoutes].
- * Every method throws [ApiException] when the server rejects the request and [NetworkException] when it cannot be reached.
+ * Every method throws [ApiClientException]: [ApiException] when the server rejects the request, [NetworkException] when it cannot be reached.
  */
 interface IApiClient {
     /** `true` while a token is stored; turns `false` after [logout] or once the server rejects the token. */

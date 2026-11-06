@@ -153,6 +153,14 @@ class KtorApiClientTest {
     }
 
     @Test
+    fun failedFetchOnWasmBecomesNetworkException() = runTest {
+        // What Ktor's Js engine throws on Wasm when fetch is rejected, e.g. by CORS: an Error, not an Exception.
+        val api = apiClient(InMemoryTokenStorage()) { throw Error("Fail to fetch") }
+
+        assertFailsWith<NetworkException> { api.login(LoginRequest("admin", "admin12345")) }
+    }
+
+    @Test
     fun penaltyFilterIsSentAsQueryParameters() = runTest {
         val api = apiClient(InMemoryTokenStorage()) { request ->
             val params = request.url.parameters
