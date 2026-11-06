@@ -2,10 +2,10 @@
     <uses-permission android:name="android.permission.INTERNET"/>
 
     <application
-        android:name=".SudvApplication"
+        android:name="ru.haykor.sudv.android.app.SudvApplication"
         android:theme="@style/Theme.Sudv"
         android:label="SUDV">
-        <activity android:name=".MainActivity"
+        <activity android:name="ru.haykor.sudv.android.app.MainActivity"
                   android:theme="@style/Theme.Sudv"
                   android:exported="true">
             <intent-filter>

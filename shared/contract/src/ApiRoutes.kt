@@ -1,10 +1,10 @@
-package ru.haykor.sudv.contract
+package ru.haykor.sudv.shared.contract
 
-import ru.haykor.sudv.domain.AttachmentId
-import ru.haykor.sudv.domain.EmployeeId
-import ru.haykor.sudv.domain.PenaltyId
-import ru.haykor.sudv.domain.ReportId
-import ru.haykor.sudv.domain.UserId
+import ru.haykor.sudv.shared.domain.AttachmentId
+import ru.haykor.sudv.shared.domain.EmployeeId
+import ru.haykor.sudv.shared.domain.PenaltyId
+import ru.haykor.sudv.shared.domain.ReportId
+import ru.haykor.sudv.shared.domain.UserId
 
 /**
  * Constants with `{id}` are route templates for the server, functions build concrete paths for the client.
@@ -92,7 +92,7 @@ object ApiParams {
     /** Matches full name or personnel number. */
     const val QUERY = "query"
 
-    /** Repeated once per department in [ApiRoutes.REPORTS_SUMMARY]. */
+    /** Repeated once per department in [ApiRoutes.REPORTS_SUMMARY]; omitting it there means all departments. */
     const val DEPARTMENT_ID = "departmentId"
 
     /** Defaults to `false`. */

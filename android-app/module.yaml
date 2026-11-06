@@ -4,8 +4,8 @@ apply:
   - ../common.module-template.yaml
 
 dependencies:
-  - ../shared/domain
-  - ../shared/contract
+  - //shared/domain
+  - //shared/contract
   - $libs.metro.runtime
   - $libs.androidx.activity.compose
   - $compose.foundation
@@ -28,7 +28,7 @@ settings:
       - id: dev.zacsweers.metro.compiler
         dependency: $libs.metro.compiler
   android:
-    namespace: ru.haykor.sudv
+    namespace: ru.haykor.sudv.android.app
     applicationId: ru.haykor.sudv
     versionCode: 1
     versionName: "1.0"

@@ -1,4 +1,4 @@
-package ru.haykor.sudv.contract
+package ru.haykor.sudv.shared.contract
 
 import kotlinx.serialization.Serializable
 

@@ -1,9 +1,9 @@
-package ru.haykor.sudv.contract
+package ru.haykor.sudv.shared.contract
 
 import kotlinx.serialization.Serializable
-import ru.haykor.sudv.domain.EmployeeId
-import ru.haykor.sudv.domain.UserId
-import ru.haykor.sudv.domain.UserRole
+import ru.haykor.sudv.shared.domain.EmployeeId
+import ru.haykor.sudv.shared.domain.UserId
+import ru.haykor.sudv.shared.domain.UserRole
 
 @Serializable
 data class UserDto(

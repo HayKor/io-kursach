@@ -4,8 +4,8 @@ apply:
   - ../common.module-template.yaml
 
 dependencies:
-  - ../shared/domain
-  - ../shared/contract
+  - //shared/domain
+  - //shared/contract
   - $libs.metro.runtime
   - $libs.ktor.server.core
   - $libs.ktor.server.netty
@@ -14,7 +14,6 @@ dependencies:
   - $libs.ktor.serialization.kotlinx.json
   - $libs.ktor.server.statusPages
   - $libs.ktor.server.callLogging
-  - $libs.ktor.server.requestValidation
   - $libs.ktor.server.auth
   - $libs.ktor.server.auth.jwt
   - $libs.ktor.server.swagger
@@ -24,10 +23,13 @@ dependencies:
   - $libs.exposed.kotlin.datetime
   - $libs.r2dbc.postgresql
   - $libs.r2dbc.pool
+  - $libs.fastexcel
 
 test-dependencies:
   - $libs.ktor.server.testHost
   - $libs.ktor.client.contentNegotiation
+  - $libs.testcontainers.postgresql
+  - $libs.postgresql.driver
 
 settings:
   ktor:
@@ -45,4 +47,4 @@ settings:
           openApiEnabled: true
           openApiCodeInference: true
   jvm:
-    mainClass: ru.haykor.sudv.MainKt
+    mainClass: ru.haykor.sudv.server.MainKt
