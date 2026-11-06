@@ -1,4 +1,4 @@
-package ru.haykor.sudv.android.app
+package ru.haykor.sudv.client.ui
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,14 +25,12 @@ fun MainScreen(modifier: Modifier = Modifier) {
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,
     ) {
-        Text(text = "СУДВ")
+        Text(text = getPlatform().platformName)
     }
 }
 
 @Preview(showBackground = true)
 @Composable
-private fun MainScreenPreview() {
-    MaterialExpressiveTheme {
-        MainScreen()
-    }
+private fun MainScreenPreview() = MaterialExpressiveTheme {
+    MainScreen()
 }

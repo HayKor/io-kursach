@@ -1,0 +1,31 @@
+product:
+  type: kmp/lib
+  platforms: [ android, wasmJs ]
+
+description: "Contains common & platform implementations"
+
+dependencies:
+  - //client-domain
+  - //shared/contract
+  - $libs.datastore.core
+  - $libs.datastore.preferences.core
+  # Ktor
+  - $libs.ktor.client.core
+  - $libs.ktor.client.contentNegotiation
+  - $libs.ktor.serialization.kotlinx.json
+  - $libs.ktor.client.encoding
+
+test-dependencies:
+  - $kotlin.test
+  - $libs.ktor.client.mock
+  - $libs.kotlinx.coroutines.test
+
+dependencies@android:
+  - $libs.ktor.client.okhttp
+
+dependencies@web:
+  - $libs.ktor.client.js
+
+apply:
+  - //common.module-template.yaml
+  - //metro.module-template.yaml

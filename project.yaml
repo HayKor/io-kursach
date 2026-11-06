@@ -1,5 +1,9 @@
 modules:
   - android-app
+  - client-data
+  - client-domain
+  - client-ui
   - server
   - shared/contract
   - shared/domain
+  - web-app

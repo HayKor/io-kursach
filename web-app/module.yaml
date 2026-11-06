@@ -1,0 +1,15 @@
+product: wasm-js/app
+
+dependencies:
+  - //client-ui
+  - //client-data
+
+description: "WasmJs app entrypoint; contains its DI graph"
+
+apply:
+  - //common.module-template.yaml
+  - //metro.module-template.yaml
+
+settings:
+  compose:
+    enabled: true

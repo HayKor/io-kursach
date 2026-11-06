@@ -1,0 +1,25 @@
+product:
+  type: kmp/lib
+  platforms: [ android, wasmJs ]
+
+description: "Contains UI & Decompose components"  
+  
+dependencies: 
+  - //client-domain: exported
+  - $compose.foundation: exported
+  - $compose.material3: exported
+  - $compose.preview
+  - $libs.decompose: exported
+  - $libs.decompose.extensions.compose: exported
+
+dependencies@android: 
+  - $compose.uiTooling
+
+apply: 
+  - //common.module-template.yaml
+  - //metro.module-template.yaml
+
+settings: 
+  compose: enabled
+  kotlin:
+    serialization: enabled

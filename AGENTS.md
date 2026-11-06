@@ -4,7 +4,7 @@
 В репозитории два независимых продукта:
 
 1. **Отчёт** (`docs/`) — техническое задание и модели на Typst. Его сдают и **защищают устно**.
-2. **Проект СУДВ** (`android-app/`, `server/`, `shared/`) — программная реализация системы, описанной в отчёте.
+2. **Проект СУДВ** (`server/`, `shared/`, `client-*/`, `android-app/`, `web-app/`) — программная реализация системы, описанной в отчёте.
 
 ## Тема
 
@@ -30,13 +30,18 @@
 ## Структура репозитория
 
 ```
-android-app/        мобильное приложение (Android, Compose)
 server/             серверное приложение (Ktor, JVM)
 shared/contract/    DTO, адреса API, коды ошибок — общий контракт клиента и сервера
 shared/domain/      правила предметной области: статусы, роли, сроки, валидация
+client-domain/      интерфейсы, через которые UI обращается к серверу (`IApiClient`)
+client-data/        «Клиент API»: реализация `IApiClient` на Ktor client, хранение токена
+client-ui/          экраны (Compose Multiplatform) и компоненты Decompose
+android-app/        точка входа Android: `Activity`, граф Metro
+web-app/            точка входа веб-клиента (Kotlin/Wasm в браузере), граф Metro
 deployment/         Docker: образ сервера, docker-compose для локального запуска, пример .env
 libs.versions.toml  версии всех внешних библиотек
 common.module-template.yaml  общие настройки модулей (Kotlin, JDK)
+metro.module-template.yaml   подключение Metro (runtime и плагин компилятора)
 project.yaml        список модулей
 kotlin, kotlin.bat  обёртка Kotlin Toolchain (бывший Amper), версия 0.13
 docs/               отчёт (Typst) — см. ниже
@@ -49,6 +54,8 @@ refs/               методички и задания к практическ
 - `shared:domain` — `ru.haykor.sudv.shared.domain`;
 - `shared:contract` — `ru.haykor.sudv.shared.contract`;
 - `server` — `ru.haykor.sudv.server`;
+- `client-domain`, `client-data`, `client-ui` — `ru.haykor.sudv.client.domain` / `.data` / `.ui`;
+- `web-app` — `ru.haykor.sudv.web.app`;
 - `android-app` — `ru.haykor.sudv.android.app` (дефис в имени модуля заменён точкой). Это же `namespace` в `module.yaml`; `applicationId` остался `ru.haykor.sudv`, чтобы не менялся идентификатор установленного приложения.
 
 ### Сборка и запуск
@@ -61,13 +68,15 @@ refs/               методички и задания к практическ
 ./kotlin test -m server                 # тесты сервера
 ./kotlin run -m server                  # сервер на :8080
 ./kotlin run -m android-app -d emulator-5554   # установить и запустить на эмуляторе
+./kotlin run -m web-app --port 8081     # веб-клиент; порт по умолчанию 8080 занят сервером
+./kotlin test -m client-data            # тесты «Клиента API» (MockEngine, без сервера)
 ./kotlin show dependencies -m <module> --scope compile|runtime
 ./kotlin show settings -m <module>      # итоговые настройки модуля
 ```
 
 Исполняемый jar сервера: `./kotlin package -m server -f executable-jar` → `build/tasks/_server_executableJarJvm/server-jvm-executable.jar`.
 
-Для работы с БД серверу нужен PostgreSQL. Настройки подключения в `server/resources/application.yaml`, их можно переопределить переменными окружения `DB_URL`, `DB_USER`, `DB_PASSWORD`. По умолчанию: `r2dbc:postgresql://localhost:5432/sudv`, пользователь и пароль `sudv` (без схемы `r2dbc:pool:` — пул собирается явно в `AppGraph`, чтобы его можно было закрыть при остановке приложения, см. «Подводные камни»). Схема БД создаётся автоматически при старте (`SchemaUtils.create` по таблицам Exposed), миграций нет. Остальные настройки — `JWT_SECRET`, `ADMIN_LOGIN`, `ADMIN_PASSWORD`, `FILES_DIR` — тоже переопределяются переменными окружения; при старте сервер создаёт учётную запись `ADMIN` с логином и паролем из `ADMIN_LOGIN`/`ADMIN_PASSWORD`, если в БД ещё нет ни одной учётной записи с этой ролью. Временная БД для проверки:
+Для работы с БД серверу нужен PostgreSQL. Настройки подключения в `server/resources/application.yaml`, их можно переопределить переменными окружения `DB_URL`, `DB_USER`, `DB_PASSWORD`. По умолчанию: `r2dbc:postgresql://localhost:5432/sudv`, пользователь и пароль `sudv` (без схемы `r2dbc:pool:` — пул собирается явно в `AppGraph`, чтобы его можно было закрыть при остановке приложения, см. «Подводные камни»). Схема БД создаётся автоматически при старте (`SchemaUtils.create` по таблицам Exposed), миграций нет. Остальные настройки — `JWT_SECRET`, `ADMIN_LOGIN`, `ADMIN_PASSWORD`, `FILES_DIR`, `CORS_ORIGINS` — тоже переопределяются переменными окружения; при старте сервер создаёт учётную запись `ADMIN` с логином и паролем из `ADMIN_LOGIN`/`ADMIN_PASSWORD`, если в БД ещё нет ни одной учётной записи с этой ролью. Временная БД для проверки:
 
 ```bash
 docker run -d --rm --name sudv-pg -e POSTGRES_DB=sudv -e POSTGRES_USER=sudv -e POSTGRES_PASSWORD=sudv -p 5432:5432 postgres:16
@@ -90,14 +99,17 @@ make dev-stop      # остановить, данные БД сохраняют�
 make dev-destroy   # остановить и удалить данные БД
 ```
 
-Если запускать `docker compose` руками, `--env-file deployment/.env.dev` обязателен: без него compose сразу завершается с ошибкой о незаданных переменных — это касается не только переменных БД, но и `JWT_SECRET`, `ADMIN_LOGIN`, `ADMIN_PASSWORD` сервиса `server`. Вложения сервис пишет в именованный том `files-data`, смонтированный на `/srv/sudv/files`.
+Если запускать `docker compose` руками, `--env-file deployment/.env.dev` обязателен: без него compose сразу завершается с ошибкой о незаданных переменных — это касается не только переменных БД, но и `JWT_SECRET`, `ADMIN_LOGIN`, `ADMIN_PASSWORD` сервиса `server`. Вложения сервис пишет в именованный том `files-data`, смонтированный на `/srv/sudv/files`. `CORS_ORIGINS` необязательна: по умолчанию разрешён веб-клиент на `http://localhost:8081`.
 
 ### Стек
 
 | Модуль | Библиотеки |
 |---|---|
-| `android-app` | Compose + Material 3 (Expressive), Decompose (навигация и компоненты), Metro (DI), Ktor client (OkHttp + kotlinx-json), kotlinx-serialization |
-| `server` | Ktor server (Netty, YAML-конфиг, content negotiation, status pages, call logging, auth + JWT, Swagger UI + OpenAPI), Exposed **через R2DBC** (`exposed-r2dbc`, `r2dbc-postgresql`, `r2dbc-pool`), `exposed-kotlin-datetime`, `fastexcel` (запись XLSX), Metro, logback; тесты — Testcontainers + JDBC-драйвер PostgreSQL (только в тестах) |
+| `client-domain` | `shared:contract`, kotlinx-coroutines (оба экспортируются) |
+| `client-data` | Ktor client (движок OkHttp на Android, Js в браузере; content negotiation + kotlinx-json), DataStore Preferences, Metro; тесты — `ktor-client-mock`, kotlinx-coroutines-test |
+| `client-ui` | Compose Multiplatform + Material 3 (Expressive), Decompose (навигация и компоненты), Metro, kotlinx-serialization |
+| `android-app`, `web-app` | `client-ui`, `client-data`, Metro; `android-app` — ещё `activity-compose` |
+| `server` | Ktor server (Netty, YAML-конфиг, content negotiation, status pages, call logging, CORS, auth + JWT, Swagger UI + OpenAPI), Exposed **через R2DBC** (`exposed-r2dbc`, `r2dbc-postgresql`, `r2dbc-pool`), `exposed-kotlin-datetime`, `fastexcel` (запись XLSX), Metro, logback; тесты — Testcontainers + JDBC-драйвер PostgreSQL (только в тестах) |
 | `shared:contract` | `shared:domain`, kotlinx-serialization-json, kotlinx-datetime (все экспортируются) |
 | `shared:domain` | `kotlinx-serialization-core` (аннотация `@Serializable` на id) и kotlinx-datetime (все экспортируются) |
 
@@ -113,12 +125,12 @@ make dev-destroy   # остановить и удалить данные БД
 
 ### Архитектурные правила
 
-- `shared:contract` и `shared:domain` **не зависят** от Android и Ktor. `contract` зависит от `domain` (и экспортирует его), обратная зависимость запрещена: enum-ы `UserRole`, `PenaltyType`, `PenaltyStatus`, `ReportFormat` живут в `domain`, DTO используют их напрямую.
+- `shared:contract` и `shared:domain` **не зависят** от Android и Ktor и собираются под `jvm`, `android` и `wasmJs`: любой код в них должен быть common. `contract` зависит от `domain` (и экспортирует его), обратная зависимость запрещена: enum-ы `UserRole`, `PenaltyType`, `PenaltyStatus`, `ReportFormat` живут в `domain`, DTO используют их напрямую.
 - Контракт API — `shared:contract`: адреса в `ApiRoutes` (шаблоны `{id}` для сервера, функции для клиента), имена параметров в `ApiParams`, ошибки — `ErrorResponse` + `ErrorCode` (с HTTP-статусом). Даты — `kotlinx.datetime.LocalDate`, моменты времени — `kotlin.time.Instant`, оба в JSON как ISO-строки. Ответы — `*Dto`, тела запросов — `*Request`.
 - Идентификаторы сущностей — `@Serializable @JvmInline value class <Entity>Id(val value: Long)` в `shared:domain` (`Ids.kt`), голый `Long` для id не использовать. В JSON id — обычное число. В common-коде `@JvmInline` нужно импортировать явно (`kotlin.jvm.JvmInline`).
 - Клиент и сервер общаются только через REST/JSON API, описанное в `shared:contract`.
 - Правила предметной области (статусы, переходы, сроки, валидация) пишутся один раз, в `shared:domain`; срок погашения взыскания вычисляется только через `PenaltyRules.expiryDate` — ни в SQL, ни где-либо ещё.
-- DI на обеих сторонах — **Metro** (плагин компилятора, граф проверяется при компиляции). Граф — `AppGraph`: на сервере он создаётся в `Application.module()` через `createGraphFactory<AppGraph.Factory>().create(environment.config, Clock.System)`, на Android он хранится в `SudvApplication.graph`.
+- DI на обеих сторонах — **Metro** (плагин компилятора, граф проверяется при компиляции; модули подключают его через `metro.module-template.yaml`). На сервере граф — `AppGraph`, он создаётся в `Application.module()` через `createGraphFactory<AppGraph.Factory>().create(environment.config, Clock.System)`. У клиентов граф свой у каждой точки входа: `AndroidAppGraph` (хранится в `SudvApplication.graph`, получает `Context`) и `WebAppGraph` (создаётся в `main()`).
 - Маршруты сервера регистрируются сами: каждая группа — класс `@Inject @ContributesIntoSet(AppScope::class)`, реализующий `RouteRegistrar` (`core/http/RouteRegistrar.kt`); зависимости приходят в конструктор, `module()` монтирует весь `Set<RouteRegistrar>` из графа. Новая группа маршрутов не требует правок в `AppGraph` и `main.kt`. Плагины Ktor устроены так же: `PluginInstaller` (`core/http/PluginInstaller.kt`) с полем `order`, порядок установки — порядок значений `PluginOrder`; `PluginInstallerTest` проверяет, что у каждого значения ровно один установщик. В `AppGraph` объявлено только то, что нужно `module()`; то, что нужно лишь тестам, вынесено в `AppGraphTestAccessors`.
 - Сервер разбит по фичам, фича — компонент из отчёта (гл. 06): `auth` («Управление доступом»), `records` («Учёт сотрудников и нарушений»), `expiry` («Контроль сроков»), `reports` («Отчётность»). Внутри фичи три слоя:
   - `presentation` — маршруты и плагины Ktor;
@@ -131,14 +143,24 @@ make dev-destroy   # остановить и удалить данные БД
 - Слой `domain` на сервере не путать с модулем `shared:domain`: там чистые правила (сроки, валидация), здесь сервисы, которые их применяют.
 - Права: роль проверяют маршруты (`requireRole`), ограничение `MANAGER` на своё подразделение — сервисы. Вкратце: `ADMIN` управляет учётными записями и может создавать сотрудников (иначе первому кадровику не к кому привязать учётную запись); `HR` работает с сотрудниками, взысканиями, вложениями и отчётами; `MANAGER` только читает сотрудников, взыскания и вложения своего подразделения. `MANAGER` не может указать чужое подразделение даже параметром запроса — такой запрос и обращение по id к чужим данным отклоняются `FORBIDDEN`, а не отфильтровываются молча.
 - БД: только Exposed **DSL** (не DAO — `exposed-dao-r2dbc` экспериментальный), все запросы внутри `suspendTransaction { }`. Блокирующий `transaction { }` — это JDBC, не использовать.
+- Клиент разбит на модули по слоям, зависимости только такие:
+  - `client-ui` → `client-domain` → `shared:contract` → `shared:domain` (`client-domain` экспортирует контракт, поэтому UI видит DTO без прямой зависимости);
+  - `client-data` → `client-domain`, `shared:contract`;
+  - `android-app`, `web-app` → `client-ui` + `client-data`.
+
+  `client-ui` **не зависит** от `client-data`: UI знает только `IApiClient`, реализацию подключает точка входа. Заодно это нужно Metro — см. «Подводные камни».
+- Модели клиента — DTO из `shared:contract`, отдельных доменных моделей на клиенте нет (так и в отчёте, гл. 06: «Клиент API» преобразует ответы «в объекты модуля `shared:contract`»). Отдельные UI-модели заводятся только там, где экрану нужна другая форма данных; маппер DTO → UI-модель лежит в `client-ui` рядом с компонентом экрана.
+- «Клиент API» (`KtorApiClient` в `client-data`): по одному методу `IApiClient` на маршрут из `ApiRoutes`. Сам подставляет токен (`ITokenStorage` на DataStore, UI его не видит), ответ с ошибкой превращает в `ApiException(code, message)`, недоступность сервера — в `NetworkException`. На `UNAUTHORIZED` стирает токен, и `isSignedIn` становится `false`. Сессия после перезапуска восстанавливается через `GET /api/auth/me`. `HttpClient` описан один раз в common-коде; платформы (`AndroidDataBindings`, `WebDataBindings`) отдают только движок, адрес сервера (`ApiConfig`) и `DataStore`.
 - Room на Android **не используется**: от него отказались намеренно.
-- Навигация на Android — Decompose: `RootComponent` / `DefaultRootComponent`, конфигурации экранов — `@Serializable`.
+- Навигация — Decompose (`client-ui`): `RootComponent` / `DefaultRootComponent`, конфигурации экранов — `@Serializable`. Компонент создаётся через `RootComponent.Factory` из графа.
 
 ### Текущее состояние
 
-Сервер реализует компоненты из отчёта (гл. 06–07): «Веб-API» (слои `presentation`), «Управление доступом» (`IAuthService`, JWT, хеширование паролей, bootstrap первого `ADMIN`), «Учёт сотрудников и нарушений» (`IRecordService`), «Контроль сроков» (`IExpiryService` и ежедневный планировщик), «Отчётность» (`IReportService`, экспорт в XLSX/CSV, архив отчётов), «Хранилище файлов» (`IFileStorage`) и «Доступ к данным» (репозитории `I*Repository` на Exposed/R2DBC). Схема БД создаётся при старте, миграций нет. Swagger UI — на `/docs`. Локальный запуск через `deployment/docker-compose.local.yml` и `Makefile` сохраняет данные и файлы вложений в именованных томах между перезапусками.
+Сервер реализует компоненты из отчёта (гл. 06–07): «Веб-API» (слои `presentation`, CORS для веб-клиента), «Управление доступом» (`IAuthService`, JWT, `GET /api/auth/me`, хеширование паролей, bootstrap первого `ADMIN`), «Учёт сотрудников и нарушений» (`IRecordService`), «Контроль сроков» (`IExpiryService` и ежедневный планировщик), «Отчётность» (`IReportService`, экспорт в XLSX/CSV, архив отчётов), «Хранилище файлов» (`IFileStorage`) и «Доступ к данным» (репозитории `I*Repository` на Exposed/R2DBC). Схема БД создаётся при старте, миграций нет. Swagger UI — на `/docs`. Локальный запуск через `deployment/docker-compose.local.yml` и `Makefile` сохраняет данные и файлы вложений в именованных томах между перезапусками.
 
-Что предстоит реализовать: Android-клиент — «Клиент API» (`IApiClient`, хранение токена) и экраны; compose-файл для боевого развёртывания (по отчёту: контейнеры JVM 21 и PostgreSQL 16, том `/srv/sudv/files`).
+Клиент: готов «Клиент API» (`IApiClient`, `KtorApiClient`, хранение токена) для Android и браузера; в `client-ui` пока только заготовка `RootComponent`.
+
+Что предстоит реализовать: экраны клиента (начиная со входа и восстановления сессии в `RootComponent`); compose-файл для боевого развёртывания (по отчёту: контейнеры JVM 21 и PostgreSQL 16, том `/srv/sudv/files`).
 
 ### Подводные камни (уже наступали)
 
@@ -154,6 +176,11 @@ make dev-destroy   # остановить и удалить данные БД
 - `receiveMultipart(formFieldLimit)` ограничивает и файловые части; превышение лимита обрывает запрос необрабатываемым `500` вместо ответа с кодом ошибки. Поэтому размер вложения проверяется по `Content-Length` и ограниченным чтением файловой части, а не лимитом Ktor.
 - `fastexcel` (через `opczip`) пишет нестандартный data descriptor: `ZipInputStream` принимает его за несовпадение размера, хотя архив корректный. Тесты читают XLSX через `ZipFile` (центральный каталог) вместо `ZipInputStream`.
 - В `testApplication` модули из конфига загружаются автоматически при первом HTTP-вызове; если тест обращается к БД до него (например, напрямую к `AppGraph`), нужен явный `startApplication()`.
+- Metro собирает `@ContributesTo`/`@ContributesBinding` только из модулей, которые лежат в **compile classpath** модуля с `@DependencyGraph`. Неэкспортированная зависимость транзитивно туда не попадает: когда `client-data` был подключён только к `client-ui`, графы его не видели, а сборка падала с `MissingBinding` лишь после того, как граф запрашивал что-то из `client-data`. Поэтому модуль с реализациями подключается к точке входа напрямую. Предупреждение `UnusedGraphInputs` про `Context` в `AndroidAppGraph` ожидаемо, пока графу ничего не нужно из `client-data`.
+- Ktor CIO собирается под wasmJs, но его сокеты работают только в Node.js (`node:net`), в браузере первый же запрос падает. В браузере движок — `Js` (Fetch API).
+- Android по умолчанию запрещает HTTP без TLS. Для локального сервера разрешение дано только для `10.0.2.2` (хост-машина из эмулятора) и `localhost` в `android-app/res/xml/network_security_config.xml`.
+- Без `exposeHeader(Content-Disposition)` в CORS браузер прячет этот заголовок от скрипта, и веб-клиент не узнаёт имя скачанного файла.
+- Wasm-тесты (`./kotlin test -m client-data`) запускаются в Chromium через Playwright, которого toolchain ставит через pnpm. Если выше по дереву каталогов есть `pnpm-workspace.yaml` (например, в `~`), pnpm ставит пакеты туда, а не в `build/`, и тесты падают с `Failed to install Chromium browser`. Тесты на Android при этом проходят.
 - Пул соединений R2DBC нужно закрывать на `ApplicationStopped` (`disposeLater()`, не блокирующий `dispose()`), иначе соединения утекают между тестовыми приложениями и быстро исчерпывают лимит Postgres.
 
 ## Отчёт (`docs/`)
@@ -187,7 +214,8 @@ make release    # копии PDF с именами для сдачи в docs/out
 - в отчёте модуль называется `android`, в коде — `android-app`;
 - в отчёте сервер работает с БД «через JDBC», в коде — R2DBC;
 - в отчёте конфиг сервера — `application.conf`, в коде — `application.yaml`;
-- в таблице программных средств (гл. 06) нет Decompose и Metro.
+- в таблице программных средств (гл. 06) нет Decompose и Metro;
+- в отчёте клиент — один модуль `android`, в коде — `client-domain`, `client-data`, `client-ui` и точки входа `android-app`, `web-app`; веб-клиента (`web-app`) и DataStore в отчёте нет.
 
 ## Git
 
