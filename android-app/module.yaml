@@ -4,8 +4,8 @@ apply:
   - ../common.module-template.yaml
 
 dependencies:
-  - ../shared/domain
-  - ../shared/contract
+  - //shared/domain
+  - //shared/contract
   - $libs.metro.runtime
   - $libs.androidx.activity.compose
   - $compose.foundation
