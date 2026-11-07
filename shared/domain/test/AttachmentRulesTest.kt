@@ -1,7 +1,9 @@
 package ru.haykor.sudv.shared.domain
 
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class AttachmentRulesTest {
@@ -34,5 +36,14 @@ class AttachmentRulesTest {
     @Test
     fun unsupportedContentTypeNeverMatches() {
         assertFalse(AttachmentRules.matchesSignature("image/png", pngBytes))
+    }
+
+    @Test
+    fun contentTypeComesFromTheExtensionInAnyCase() {
+        assertEquals("application/pdf", AttachmentRules.contentTypeOf("Приказ №5.PDF"))
+        assertEquals("image/jpeg", AttachmentRules.contentTypeOf("scan.final.jpeg"))
+        assertEquals("image/jpeg", AttachmentRules.contentTypeOf("scan.jpg"))
+        assertNull(AttachmentRules.contentTypeOf("scan.png"))
+        assertNull(AttachmentRules.contentTypeOf("pdf"))
     }
 }

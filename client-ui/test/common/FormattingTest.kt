@@ -34,4 +34,12 @@ class FormattingTest {
             listOf(0, 1, 2, 5, 11, 14, 21, 22, 111, 365).map(::days),
         )
     }
+
+    @Test
+    fun fileSizesInRussianUnits() {
+        assertEquals(
+            listOf("0 Б", "1023 Б", "1 КБ", "48 КБ", "1023 КБ", "1,0 МБ", "1,5 МБ", "10,0 МБ"),
+            listOf(0L, 1023, 1024, 48 * 1024 + 100, 1024 * 1024 - 1, 1024 * 1024, 1536 * 1024, 10L * 1024 * 1024).map(::fileSize),
+        )
+    }
 }

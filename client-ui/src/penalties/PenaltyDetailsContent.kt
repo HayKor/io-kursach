@@ -69,6 +69,7 @@ fun PenaltyDetailsContent(component: PenaltyDetailsComponent, twoPane: Boolean, 
                 if (state.canRemove) {
                     OutlinedButton(onClick = component::onRemoveClick) { Text("Снять досрочно") }
                 }
+                AttachmentsContent(component.attachments)
                 History(details.events)
             }
         }

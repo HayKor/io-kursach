@@ -1,6 +1,7 @@
 package ru.haykor.sudv.client.ui.penalties
 
 import com.arkivanov.decompose.ComponentContext
+import com.arkivanov.decompose.childContext
 import com.arkivanov.decompose.value.MutableValue
 import com.arkivanov.decompose.value.Value
 import com.arkivanov.decompose.value.update
@@ -29,6 +30,7 @@ import kotlin.time.Clock
 interface PenaltyDetailsComponent {
     val penaltyId: PenaltyId
     val state: Value<State>
+    val attachments: AttachmentsComponent
 
     fun onRemoveClick()
     fun onRemovalOrderNumberChange(value: String)
@@ -76,6 +78,14 @@ class DefaultPenaltyDetailsComponent(
         PenaltyDetailsComponent.State(today = clock.todayIn(TimeZone.currentSystemDefault()), canManage = role.canManagePenalties),
     )
     override val state: Value<PenaltyDetailsComponent.State> = _state
+
+    private val _attachments = DefaultAttachmentsComponent(
+        componentContext = childContext("attachments"),
+        apiClient = apiClient,
+        penaltyId = penaltyId,
+        canEdit = role.canManagePenalties,
+    )
+    override val attachments: AttachmentsComponent = _attachments
 
     init {
         reload()
@@ -134,6 +144,7 @@ class DefaultPenaltyDetailsComponent(
         scope.launch {
             if (_state.value.details !is LoadState.Loaded) _state.update { it.copy(details = LoadState.Loading) }
             val result = load { apiClient.penalty(penaltyId) }
+            (result as? LoadState.Loaded)?.let { _attachments.setAttachments(it.data.attachments) }
             _state.update { it.copy(details = result) }
         }
     }

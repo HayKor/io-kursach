@@ -49,3 +49,13 @@ fun days(count: Int): String {
     }
     return "$count $form"
 }
+
+/** `512 Б`, `48 КБ`, `1,5 МБ`: one decimal only where whole units would hide the difference. */
+fun fileSize(bytes: Long): String = when {
+    bytes < 1024 -> "$bytes Б"
+    bytes < 1024 * 1024 -> "${bytes / 1024} КБ"
+    else -> {
+        val tenths = (bytes * 10 + 512 * 1024) / (1024 * 1024)
+        "${tenths / 10},${tenths % 10} МБ"
+    }
+}

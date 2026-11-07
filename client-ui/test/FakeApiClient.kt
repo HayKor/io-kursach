@@ -33,6 +33,7 @@ import ru.haykor.sudv.shared.domain.ReportFormat
 import ru.haykor.sudv.shared.domain.ReportId
 import ru.haykor.sudv.shared.domain.UserId
 import ru.haykor.sudv.shared.domain.UserRole
+import kotlin.time.Instant
 
 val TEST_USER = UserDto(
     id = UserId(1),
@@ -82,6 +83,16 @@ fun penalty(
     removal = removal,
 )
 
+val PDF_BYTES = "%PDF-1.4".encodeToByteArray()
+
+fun attachment(id: Long, fileName: String = "Приказ.pdf") = AttachmentDto(
+    id = AttachmentId(id),
+    fileName = fileName,
+    contentType = "application/pdf",
+    sizeBytes = 2048,
+    uploadedAt = Instant.parse("2026-11-07T10:00:00Z"),
+)
+
 /** Arguments of one [IApiClient.employees] call. */
 data class EmployeesQuery(val query: String?, val departmentId: DepartmentId?, val includeArchived: Boolean)
 
@@ -123,6 +134,13 @@ class FakeApiClient(signedIn: Boolean) : IApiClient {
     var onRemovePenalty: suspend (PenaltyId, PenaltyRemovalDto) -> PenaltyDto = { id, removal ->
         penalty(id.value, PenaltyStatus.REMOVED, removal = removal)
     }
+
+    val uploads = mutableListOf<Pair<PenaltyId, FileContent>>()
+    var onUpload: suspend (PenaltyId, FileContent) -> AttachmentDto = { _, file -> attachment(90, file.fileName) }
+    val downloads = mutableListOf<AttachmentId>()
+    var onDownload: suspend (AttachmentId) -> FileContent = { FileContent("Приказ.pdf", "application/pdf", PDF_BYTES) }
+    val deletedAttachments = mutableListOf<AttachmentId>()
+    var onDeleteAttachment: suspend (AttachmentId) -> Unit = {}
 
     override suspend fun login(request: LoginRequest): LoginResponse {
         val user = onLogin(request)
@@ -206,9 +224,21 @@ class FakeApiClient(signedIn: Boolean) : IApiClient {
         return onRemovePenalty(id, removal)
     }
 
-    override suspend fun uploadAttachment(penaltyId: PenaltyId, file: FileContent): AttachmentDto = unused()
-    override suspend fun downloadAttachment(id: AttachmentId): FileContent = unused()
-    override suspend fun deleteAttachment(id: AttachmentId) = unused()
+    override suspend fun uploadAttachment(penaltyId: PenaltyId, file: FileContent): AttachmentDto {
+        uploads += penaltyId to file
+        return onUpload(penaltyId, file)
+    }
+
+    override suspend fun downloadAttachment(id: AttachmentId): FileContent {
+        downloads += id
+        return onDownload(id)
+    }
+
+    override suspend fun deleteAttachment(id: AttachmentId) {
+        deletedAttachments += id
+        onDeleteAttachment(id)
+    }
+
     override suspend fun employeeCard(id: EmployeeId): EmployeeCardDto = unused()
     override suspend fun exportEmployeeCard(id: EmployeeId, format: ReportFormat): FileContent = unused()
     override suspend fun exportPenalties(filter: PenaltyFilter, format: ReportFormat): FileContent = unused()
