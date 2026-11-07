@@ -26,6 +26,9 @@ import ru.haykor.sudv.shared.domain.AttachmentId
 import ru.haykor.sudv.shared.domain.DepartmentId
 import ru.haykor.sudv.shared.domain.EmployeeId
 import ru.haykor.sudv.shared.domain.PenaltyId
+import ru.haykor.sudv.shared.domain.PenaltyRules
+import ru.haykor.sudv.shared.domain.PenaltyStatus
+import ru.haykor.sudv.shared.domain.PenaltyType
 import ru.haykor.sudv.shared.domain.ReportFormat
 import ru.haykor.sudv.shared.domain.ReportId
 import ru.haykor.sudv.shared.domain.UserId
@@ -61,6 +64,24 @@ fun account(id: Long, login: String, role: UserRole = UserRole.HR, employeeId: L
     employee = EmployeeShortDto(EmployeeId(employeeId), "EMP-$employeeId", "Иванов", "Иван", null, IT_DEPARTMENT),
 )
 
+fun penalty(
+    id: Long,
+    status: PenaltyStatus = PenaltyStatus.ACTIVE,
+    orderDate: LocalDate = LocalDate(2026, 3, 1),
+    removal: PenaltyRemovalDto? = null,
+) = PenaltyDto(
+    id = PenaltyId(id),
+    employee = EmployeeShortDto(EmployeeId(1), "EMP-1", "Иванов", "Иван", null, IT_DEPARTMENT),
+    type = PenaltyType.REMARK,
+    violationDate = orderDate,
+    description = "Опоздание",
+    orderNumber = "$id-к",
+    orderDate = orderDate,
+    expiryDate = PenaltyRules.expiryDate(orderDate),
+    status = status,
+    removal = removal,
+)
+
 /** Arguments of one [IApiClient.employees] call. */
 data class EmployeesQuery(val query: String?, val departmentId: DepartmentId?, val includeArchived: Boolean)
 
@@ -91,6 +112,17 @@ class FakeApiClient(signedIn: Boolean) : IApiClient {
     var onCreateUser: suspend (CreateUserRequest) -> UserDto = { account(50, it.login, it.role, it.employeeId.value) }
     val blockCalls = mutableListOf<Pair<UserId, Boolean>>()
     var onSetBlocked: suspend (UserId, Boolean) -> UserDto = { id, blocked -> account(id.value, "user${id.value}", isBlocked = blocked) }
+
+    val penaltyFilters = mutableListOf<PenaltyFilter>()
+    var onPenalties: suspend (PenaltyFilter) -> List<PenaltyDto> = { listOf(penalty(1), penalty(2, PenaltyStatus.EXPIRED)) }
+    val penaltyCalls = mutableListOf<PenaltyId>()
+    var onPenalty: suspend (PenaltyId) -> PenaltyDetailsDto = { PenaltyDetailsDto(penalty(it.value), emptyList(), emptyList()) }
+    val createdPenalties = mutableListOf<CreatePenaltyRequest>()
+    var onCreatePenalty: suspend (CreatePenaltyRequest) -> PenaltyDto = { penalty(77) }
+    val removals = mutableListOf<Pair<PenaltyId, PenaltyRemovalDto>>()
+    var onRemovePenalty: suspend (PenaltyId, PenaltyRemovalDto) -> PenaltyDto = { id, removal ->
+        penalty(id.value, PenaltyStatus.REMOVED, removal = removal)
+    }
 
     override suspend fun login(request: LoginRequest): LoginResponse {
         val user = onLogin(request)
@@ -154,10 +186,26 @@ class FakeApiClient(signedIn: Boolean) : IApiClient {
         return employee(id.value, isArchived = true)
     }
 
-    override suspend fun penalties(filter: PenaltyFilter): List<PenaltyDto> = unused()
-    override suspend fun penalty(id: PenaltyId): PenaltyDetailsDto = unused()
-    override suspend fun createPenalty(request: CreatePenaltyRequest): PenaltyDto = unused()
-    override suspend fun removePenalty(id: PenaltyId, removal: PenaltyRemovalDto): PenaltyDto = unused()
+    override suspend fun penalties(filter: PenaltyFilter): List<PenaltyDto> {
+        penaltyFilters += filter
+        return onPenalties(filter)
+    }
+
+    override suspend fun penalty(id: PenaltyId): PenaltyDetailsDto {
+        penaltyCalls += id
+        return onPenalty(id)
+    }
+
+    override suspend fun createPenalty(request: CreatePenaltyRequest): PenaltyDto {
+        createdPenalties += request
+        return onCreatePenalty(request)
+    }
+
+    override suspend fun removePenalty(id: PenaltyId, removal: PenaltyRemovalDto): PenaltyDto {
+        removals += id to removal
+        return onRemovePenalty(id, removal)
+    }
+
     override suspend fun uploadAttachment(penaltyId: PenaltyId, file: FileContent): AttachmentDto = unused()
     override suspend fun downloadAttachment(id: AttachmentId): FileContent = unused()
     override suspend fun deleteAttachment(id: AttachmentId) = unused()

@@ -11,3 +11,6 @@ val UserRole.canEditEmployees: Boolean get() = this == UserRole.HR
 
 /** MANAGER sees only their own department, so the department filter is pointless for them. */
 val UserRole.seesAllDepartments: Boolean get() = this != UserRole.MANAGER
+
+/** Registering and early removal; MANAGER only reads penalties of their department. */
+val UserRole.canManagePenalties: Boolean get() = this == UserRole.HR

@@ -29,6 +29,8 @@ import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import ru.haykor.sudv.client.ui.common.fullName
 import ru.haykor.sudv.client.ui.employees.EmployeesComponent
+import ru.haykor.sudv.client.ui.penalties.PenaltiesComponent
+import ru.haykor.sudv.client.ui.penalties.PenaltiesContent
 import ru.haykor.sudv.client.ui.employees.EmployeesContent
 import ru.haykor.sudv.client.ui.users.UsersComponent
 import ru.haykor.sudv.client.ui.users.UsersContent
@@ -108,6 +110,7 @@ private fun UserMenu(user: UserDto, onLogout: () -> Unit) {
 @Composable
 private fun SectionContent(component: SectionComponent) {
     when (component) {
+        is PenaltiesComponent -> PenaltiesContent(component)
         is EmployeesComponent -> EmployeesContent(component)
         is UsersComponent -> UsersContent(component)
         else -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

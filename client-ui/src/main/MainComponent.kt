@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import ru.haykor.sudv.client.domain.IApiClient
 import ru.haykor.sudv.client.ui.DeepLink
 import ru.haykor.sudv.client.ui.employees.DefaultEmployeesComponent
+import ru.haykor.sudv.client.ui.penalties.DefaultPenaltiesComponent
 import ru.haykor.sudv.client.ui.users.DefaultUsersComponent
 import ru.haykor.sudv.shared.contract.UserDto
 
@@ -69,6 +70,7 @@ class DefaultMainComponent(
     private fun section(section: Section, context: ComponentContext): SectionComponent {
         val deepLink = pendingDeepLink.also { pendingDeepLink = DeepLink.None }
         return when (section) {
+            Section.PENALTIES -> DefaultPenaltiesComponent(context, apiClient, user.role, deepLink)
             Section.EMPLOYEES -> DefaultEmployeesComponent(context, apiClient, user.role, deepLink)
             Section.USERS -> DefaultUsersComponent(context, apiClient, user.id, deepLink)
             else -> PlaceholderSectionComponent(context, section)

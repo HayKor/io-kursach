@@ -38,3 +38,14 @@ private fun String.initial(): String? = trim().firstOrNull()?.let { "$it." }
 val EmployeeDto.fullName: String get() = fullName(lastName, firstName, middleName)
 val EmployeeShortDto.fullName: String get() = fullName(lastName, firstName, middleName)
 val EmployeeShortDto.shortName: String get() = shortName(lastName, firstName, middleName)
+
+/** `1 день`, `3 дня`, `11 дней`: Russian picks the noun form by the last one or two digits. */
+fun days(count: Int): String {
+    val form = when {
+        count % 100 in 11..14 -> "дней"
+        count % 10 == 1 -> "день"
+        count % 10 in 2..4 -> "дня"
+        else -> "дней"
+    }
+    return "$count $form"
+}

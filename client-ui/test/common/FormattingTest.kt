@@ -26,4 +26,12 @@ class FormattingTest {
         assertEquals("Иванов И. И.", shortName("Иванов", "Иван", "Иванович"))
         assertEquals("Иванов И.", shortName("Иванов", "Иван", null))
     }
+
+    @Test
+    fun daysAgreeWithTheNumber() {
+        assertEquals(
+            listOf("0 дней", "1 день", "2 дня", "5 дней", "11 дней", "14 дней", "21 день", "22 дня", "111 дней", "365 дней"),
+            listOf(0, 1, 2, 5, 11, 14, 21, 22, 111, 365).map(::days),
+        )
+    }
 }
