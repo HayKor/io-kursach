@@ -25,6 +25,7 @@ class LocalFileStorageTest {
     private fun testFileStorageConfig(): AppConfig = AppConfig(
         timeZone = TimeZone.UTC,
         corsAllowedOrigins = emptyList(),
+        webDir = null,
         jwtSecret = "test-secret",
         jwtIssuer = "sudv-test",
         jwtTtlHours = 12,
