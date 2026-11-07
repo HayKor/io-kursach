@@ -7,13 +7,12 @@ description: "Contains UI & Decompose components"
 dependencies: 
   - //client-domain: exported
   - $compose.foundation: exported
-  - $compose.material3: exported
+  - $libs.compose.material3: exported
   - $compose.preview
   - $libs.decompose: exported
   - $libs.decompose.extensions.compose: exported
   - $libs.essenty.lifecycle.coroutines
   - $libs.compose.material3.adaptive.navigationSuite
-  - $libs.compose.material3.adaptive.layout
   - $libs.filekit.dialogs.compose
 
 test-dependencies:

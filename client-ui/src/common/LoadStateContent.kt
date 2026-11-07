@@ -15,7 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
-/** Spinner while loading, the message with «Повторить» on failure, [content] once loaded. */
+/** Spinner while loading, the message (with «Повторить» if it can help) on failure, [content] once loaded. */
 @Composable
 fun <T> LoadStateContent(
     state: LoadState<T>,
@@ -25,7 +25,7 @@ fun <T> LoadStateContent(
 ) {
     when (state) {
         LoadState.Loading -> LoadingContent(modifier)
-        is LoadState.Failed -> ErrorContent(state.message, onRetry, modifier)
+        is LoadState.Failed -> ErrorContent(state.message, onRetry.takeIf { state.canRetry }, modifier)
         is LoadState.Loaded -> content(state.data)
     }
 }
@@ -37,14 +37,15 @@ fun LoadingContent(modifier: Modifier = Modifier) {
     }
 }
 
+/** Without [onRetry] there is no «Повторить» button. */
 @Composable
-fun ErrorContent(message: String, onRetry: () -> Unit, modifier: Modifier = Modifier) {
+fun ErrorContent(message: String, onRetry: (() -> Unit)?, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier.fillMaxSize().padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
     ) {
         Text(message, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
-        Button(onClick = onRetry) { Text("Повторить") }
+        if (onRetry != null) Button(onClick = onRetry) { Text("Повторить") }
     }
 }

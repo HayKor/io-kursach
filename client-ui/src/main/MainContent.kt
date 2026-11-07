@@ -28,6 +28,8 @@ import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import ru.haykor.sudv.client.ui.common.fullName
+import ru.haykor.sudv.client.ui.employees.EmployeesComponent
+import ru.haykor.sudv.client.ui.employees.EmployeesContent
 import ru.haykor.sudv.client.ui.resources.Res
 import ru.haykor.sudv.client.ui.resources.ic_account_circle
 import ru.haykor.sudv.client.ui.resources.ic_gavel
@@ -103,8 +105,11 @@ private fun UserMenu(user: UserDto, onLogout: () -> Unit) {
 
 @Composable
 private fun SectionContent(component: SectionComponent) {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text("Раздел «${component.section.title}» в разработке", style = MaterialTheme.typography.bodyLarge)
+    when (component) {
+        is EmployeesComponent -> EmployeesContent(component)
+        else -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("Раздел «${component.section.title}» в разработке", style = MaterialTheme.typography.bodyLarge)
+        }
     }
 }
 

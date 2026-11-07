@@ -39,11 +39,43 @@ val TEST_USER = UserDto(
     employee = EmployeeShortDto(EmployeeId(1), "EMP-1", "Иванов", "Иван", null, DepartmentDto(DepartmentId(1), "ИТ-отдел")),
 )
 
-/** Mimics the real client's session handling: [login] stores a token, [logout] clears it. Other routes are not used. */
+val IT_DEPARTMENT = DepartmentDto(DepartmentId(1), "ИТ-отдел")
+val HR_DEPARTMENT = DepartmentDto(DepartmentId(2), "Отдел кадров")
+
+fun employee(id: Long, lastName: String = "Иванов", isArchived: Boolean = false) = EmployeeDto(
+    id = EmployeeId(id),
+    personnelNumber = "EMP-$id",
+    lastName = lastName,
+    firstName = "Иван",
+    middleName = null,
+    position = "Инженер",
+    department = IT_DEPARTMENT,
+    isArchived = isArchived,
+)
+
+/** Arguments of one [IApiClient.employees] call. */
+data class EmployeesQuery(val query: String?, val departmentId: DepartmentId?, val includeArchived: Boolean)
+
+/**
+ * Mimics the real client's session handling: [login] stores a token, [logout] clears it.
+ * Routes a test needs are answered by the `on…` handlers and recorded; any other route fails the test.
+ */
 class FakeApiClient(signedIn: Boolean) : IApiClient {
     override val isSignedIn = MutableStateFlow(signedIn)
     var onLogin: suspend (LoginRequest) -> UserDto = { TEST_USER }
     var onMe: suspend () -> UserDto = { TEST_USER }
+
+    val employeesQueries = mutableListOf<EmployeesQuery>()
+    var onEmployees: suspend (EmployeesQuery) -> List<EmployeeDto> = { listOf(employee(1), employee(2, "Петров")) }
+    var departmentsCalls = 0
+    var onDepartments: suspend () -> List<DepartmentDto> = { listOf(IT_DEPARTMENT, HR_DEPARTMENT) }
+    val employeeCalls = mutableListOf<EmployeeId>()
+    var onEmployee: suspend (EmployeeId) -> EmployeeDto = { employee(it.value) }
+    val createdEmployees = mutableListOf<EmployeeRequest>()
+    var onCreateEmployee: suspend (EmployeeRequest) -> EmployeeDto = { employee(99, it.lastName) }
+    val updatedEmployees = mutableListOf<Pair<EmployeeId, EmployeeRequest>>()
+    var onUpdateEmployee: suspend (EmployeeId, EmployeeRequest) -> EmployeeDto = { id, request -> employee(id.value, request.lastName) }
+    val archivedEmployees = mutableListOf<EmployeeId>()
 
     override suspend fun login(request: LoginRequest): LoginResponse {
         val user = onLogin(request)
@@ -61,12 +93,37 @@ class FakeApiClient(signedIn: Boolean) : IApiClient {
     override suspend fun createUser(request: CreateUserRequest): UserDto = unused()
     override suspend fun blockUser(id: UserId): UserDto = unused()
     override suspend fun unblockUser(id: UserId): UserDto = unused()
-    override suspend fun departments(): List<DepartmentDto> = unused()
-    override suspend fun employees(query: String?, departmentId: DepartmentId?, includeArchived: Boolean): List<EmployeeDto> = unused()
-    override suspend fun employee(id: EmployeeId): EmployeeDto = unused()
-    override suspend fun createEmployee(request: EmployeeRequest): EmployeeDto = unused()
-    override suspend fun updateEmployee(id: EmployeeId, request: EmployeeRequest): EmployeeDto = unused()
-    override suspend fun archiveEmployee(id: EmployeeId): EmployeeDto = unused()
+    override suspend fun departments(): List<DepartmentDto> {
+        departmentsCalls++
+        return onDepartments()
+    }
+
+    override suspend fun employees(query: String?, departmentId: DepartmentId?, includeArchived: Boolean): List<EmployeeDto> {
+        val call = EmployeesQuery(query, departmentId, includeArchived)
+        employeesQueries += call
+        return onEmployees(call)
+    }
+
+    override suspend fun employee(id: EmployeeId): EmployeeDto {
+        employeeCalls += id
+        return onEmployee(id)
+    }
+
+    override suspend fun createEmployee(request: EmployeeRequest): EmployeeDto {
+        createdEmployees += request
+        return onCreateEmployee(request)
+    }
+
+    override suspend fun updateEmployee(id: EmployeeId, request: EmployeeRequest): EmployeeDto {
+        updatedEmployees += id to request
+        return onUpdateEmployee(id, request)
+    }
+
+    override suspend fun archiveEmployee(id: EmployeeId): EmployeeDto {
+        archivedEmployees += id
+        return employee(id.value, isArchived = true)
+    }
+
     override suspend fun penalties(filter: PenaltyFilter): List<PenaltyDto> = unused()
     override suspend fun penalty(id: PenaltyId): PenaltyDetailsDto = unused()
     override suspend fun createPenalty(request: CreatePenaltyRequest): PenaltyDto = unused()

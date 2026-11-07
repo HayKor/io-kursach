@@ -13,6 +13,7 @@ import com.arkivanov.essenty.lifecycle.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import ru.haykor.sudv.client.domain.IApiClient
 import ru.haykor.sudv.client.ui.DeepLink
+import ru.haykor.sudv.client.ui.employees.DefaultEmployeesComponent
 import ru.haykor.sudv.shared.contract.UserDto
 
 /** The signed-in shell: the sections of the user's role, one of them open. */
@@ -38,15 +39,19 @@ class DefaultMainComponent(
     private val scope = coroutineScope()
     private val navigation = StackNavigation<Section>()
 
+    // The rest of the deep link (e.g. `7/edit`) belongs to the section it starts with, and only to its first instance.
+    private var pendingDeepLink = deepLink.dropFirst()
+
     override val sections: List<Section> = sectionsFor(user.role)
 
     private val _stack = childStack(
         source = navigation,
         serializer = Section.serializer(),
-        initialConfiguration = sections.firstOrNull { it.path == deepLink.first } ?: sections.first(),
+        initialConfiguration = sections.firstOrNull { it.path == deepLink.first }
+            ?: sections.first().also { pendingDeepLink = DeepLink.None },
         // Back inside a section is handled by the section; from a section's start screen it leaves the app.
         handleBackButton = false,
-        childFactory = { section, context -> PlaceholderSectionComponent(context, section) },
+        childFactory = ::section,
     )
     override val stack: Value<ChildStack<*, SectionComponent>> = _stack
 
@@ -57,7 +62,16 @@ class DefaultMainComponent(
         serializer = Section.serializer(),
         enableHistory = false,
         pathMapper = { it.configuration.path },
+        childSelector = { it.instance as? WebNavigationOwner },
     )
+
+    private fun section(section: Section, context: ComponentContext): SectionComponent {
+        val deepLink = pendingDeepLink.also { pendingDeepLink = DeepLink.None }
+        return when (section) {
+            Section.EMPLOYEES -> DefaultEmployeesComponent(context, apiClient, user.role, deepLink)
+            else -> PlaceholderSectionComponent(context, section)
+        }
+    }
 
     override fun onSectionClick(section: Section) {
         // Not bringToFront: it drops every configuration of the same class, i.e. all other sections of this enum.
