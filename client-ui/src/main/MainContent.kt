@@ -30,6 +30,8 @@ import org.jetbrains.compose.resources.painterResource
 import ru.haykor.sudv.client.ui.common.fullName
 import ru.haykor.sudv.client.ui.employees.EmployeesComponent
 import ru.haykor.sudv.client.ui.employees.EmployeesContent
+import ru.haykor.sudv.client.ui.users.UsersComponent
+import ru.haykor.sudv.client.ui.users.UsersContent
 import ru.haykor.sudv.client.ui.resources.Res
 import ru.haykor.sudv.client.ui.resources.ic_account_circle
 import ru.haykor.sudv.client.ui.resources.ic_gavel
@@ -107,6 +109,7 @@ private fun UserMenu(user: UserDto, onLogout: () -> Unit) {
 private fun SectionContent(component: SectionComponent) {
     when (component) {
         is EmployeesComponent -> EmployeesContent(component)
+        is UsersComponent -> UsersContent(component)
         else -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text("Раздел «${component.section.title}» в разработке", style = MaterialTheme.typography.bodyLarge)
         }

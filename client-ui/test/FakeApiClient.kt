@@ -53,6 +53,14 @@ fun employee(id: Long, lastName: String = "Иванов", isArchived: Boolean = 
     isArchived = isArchived,
 )
 
+fun account(id: Long, login: String, role: UserRole = UserRole.HR, employeeId: Long = id, isBlocked: Boolean = false) = UserDto(
+    id = UserId(id),
+    login = login,
+    role = role,
+    isBlocked = isBlocked,
+    employee = EmployeeShortDto(EmployeeId(employeeId), "EMP-$employeeId", "Иванов", "Иван", null, IT_DEPARTMENT),
+)
+
 /** Arguments of one [IApiClient.employees] call. */
 data class EmployeesQuery(val query: String?, val departmentId: DepartmentId?, val includeArchived: Boolean)
 
@@ -77,6 +85,13 @@ class FakeApiClient(signedIn: Boolean) : IApiClient {
     var onUpdateEmployee: suspend (EmployeeId, EmployeeRequest) -> EmployeeDto = { id, request -> employee(id.value, request.lastName) }
     val archivedEmployees = mutableListOf<EmployeeId>()
 
+    var usersCalls = 0
+    var onUsers: suspend () -> List<UserDto> = { listOf(account(1, "admin", UserRole.ADMIN), account(2, "hr1")) }
+    val createdUsers = mutableListOf<CreateUserRequest>()
+    var onCreateUser: suspend (CreateUserRequest) -> UserDto = { account(50, it.login, it.role, it.employeeId.value) }
+    val blockCalls = mutableListOf<Pair<UserId, Boolean>>()
+    var onSetBlocked: suspend (UserId, Boolean) -> UserDto = { id, blocked -> account(id.value, "user${id.value}", isBlocked = blocked) }
+
     override suspend fun login(request: LoginRequest): LoginResponse {
         val user = onLogin(request)
         isSignedIn.value = true
@@ -89,10 +104,25 @@ class FakeApiClient(signedIn: Boolean) : IApiClient {
 
     override suspend fun me(): UserDto = onMe()
 
-    override suspend fun users(): List<UserDto> = unused()
-    override suspend fun createUser(request: CreateUserRequest): UserDto = unused()
-    override suspend fun blockUser(id: UserId): UserDto = unused()
-    override suspend fun unblockUser(id: UserId): UserDto = unused()
+    override suspend fun users(): List<UserDto> {
+        usersCalls++
+        return onUsers()
+    }
+
+    override suspend fun createUser(request: CreateUserRequest): UserDto {
+        createdUsers += request
+        return onCreateUser(request)
+    }
+
+    override suspend fun blockUser(id: UserId): UserDto {
+        blockCalls += id to true
+        return onSetBlocked(id, true)
+    }
+
+    override suspend fun unblockUser(id: UserId): UserDto {
+        blockCalls += id to false
+        return onSetBlocked(id, false)
+    }
     override suspend fun departments(): List<DepartmentDto> {
         departmentsCalls++
         return onDepartments()
