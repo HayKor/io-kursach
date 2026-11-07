@@ -2,6 +2,10 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <!-- Without it mobile browsers lay the page out 980px wide, and the UI picks the desktop layout. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Scripts below are referenced relatively; this keeps them at the site root on deep URLs like /penalties/42. -->
+    <base href="/">
     <!-- Address of the SUDV server. Empty means the server that serves this page;
          the dev server (`./kotlin run -m web-app --port 8081`) needs the API on 8080. -->
     <meta name="sudv-api" content="http://localhost:8080">

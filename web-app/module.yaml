@@ -14,6 +14,9 @@ settings:
   compose:
     enabled: true
   kotlin:
+    # Web navigation (URLs, browser back/forward) is experimental in Decompose 3.5; every screen component uses it.
+    optIns:
+      - com.arkivanov.decompose.ExperimentalDecomposeApi
     # Kotlin/Wasm links modules by IR signatures; by default an unresolved call only throws IrLinkageError at runtime.
     freeCompilerArgs:
       - -Xpartial-linkage-loglevel=ERROR

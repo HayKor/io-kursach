@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.arkivanov.decompose.retainedComponent
+import ru.haykor.sudv.client.ui.DeepLink
 import ru.haykor.sudv.client.ui.RootContent
 import ru.haykor.sudv.client.ui.theme.SudvTheme
 
@@ -15,7 +16,7 @@ class MainActivity : ComponentActivity() {
 
         val graph = (applicationContext as SudvApplication).graph
         val root = retainedComponent { ctx ->
-            graph.rootFactory.create(ctx)
+            graph.rootFactory.create(ctx, DeepLink.None)
         }
         setContent {
             SudvTheme {

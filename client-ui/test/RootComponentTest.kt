@@ -11,6 +11,7 @@ import kotlinx.coroutines.test.setMain
 import ru.haykor.sudv.client.domain.ApiException
 import ru.haykor.sudv.client.domain.NetworkException
 import ru.haykor.sudv.client.ui.login.LoginComponent
+import ru.haykor.sudv.client.ui.main.Section
 import ru.haykor.sudv.client.ui.splash.SplashComponent
 import ru.haykor.sudv.shared.contract.ErrorCode
 import kotlin.test.AfterTest
@@ -18,6 +19,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertSame
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RootComponentTest {
@@ -28,7 +30,8 @@ class RootComponentTest {
     @AfterTest
     fun tearDown() = Dispatchers.resetMain()
 
-    private fun root(api: FakeApiClient) = DefaultRootComponent(DefaultComponentContext(LifecycleRegistry()), api)
+    private fun root(api: FakeApiClient, deepLink: DeepLink = DeepLink.None) =
+        DefaultRootComponent(DefaultComponentContext(LifecycleRegistry()), api, deepLink)
 
     private val RootComponent.active get() = stack.value.active.instance
 
@@ -146,5 +149,50 @@ class RootComponentTest {
         api.isSignedIn.value = false
 
         assertIs<RootComponent.Child.Login>(root.active)
+    }
+
+    @Test
+    fun deepLinkWaitsForLogin() {
+        val root = root(FakeApiClient(signedIn = false), DeepLink.parse("/employees"))
+        val login = assertIs<RootComponent.Child.Login>(root.active).component
+
+        login.onLoginChange("hr")
+        login.onPasswordChange("password123")
+        login.onSubmit()
+
+        val main = assertIs<RootComponent.Child.Main>(root.active).component
+        assertEquals(Section.EMPLOYEES, main.stack.value.active.instance.section)
+    }
+
+    @Test
+    fun deepLinkIsUsedOnlyOnce() {
+        val api = FakeApiClient(signedIn = true)
+        val root = root(api, DeepLink.parse("/employees"))
+        assertIs<RootComponent.Child.Main>(root.active).component.onLogout()
+        val login = assertIs<RootComponent.Child.Login>(root.active).component
+
+        login.onLoginChange("hr")
+        login.onPasswordChange("password123")
+        login.onSubmit()
+
+        val main = assertIs<RootComponent.Child.Main>(root.active).component
+        assertEquals(Section.PENALTIES, main.stack.value.active.instance.section)
+    }
+
+    @Test
+    fun loginScreenHasItsOwnUrl() {
+        val root = root(FakeApiClient(signedIn = false))
+
+        assertEquals("login", root.webNavigation.history.value.last().path)
+    }
+
+    @Test
+    fun mainScreenDelegatesTheUrlToTheSection() {
+        val root = root(FakeApiClient(signedIn = true), DeepLink.parse("/employees"))
+        val main = assertIs<RootComponent.Child.Main>(root.active).component
+
+        val item = root.webNavigation.history.value.last()
+        assertEquals("", item.path)
+        assertSame(main, item.child)
     }
 }

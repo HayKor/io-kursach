@@ -27,7 +27,13 @@ apply:
   - //common.module-template.yaml
   - //metro.module-template.yaml
 
-settings: 
-  compose: enabled
+settings:
+  compose:
+    enabled: true
+    resources:
+      packageName: ru.haykor.sudv.client.ui.resources
   kotlin:
     serialization: enabled
+    # Web navigation (URLs, browser back/forward) is experimental in Decompose 3.5; every screen component uses it.
+    optIns:
+      - com.arkivanov.decompose.ExperimentalDecomposeApi
