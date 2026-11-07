@@ -4,9 +4,9 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.material3.MaterialExpressiveTheme
 import com.arkivanov.decompose.retainedComponent
 import ru.haykor.sudv.client.ui.RootContent
+import ru.haykor.sudv.client.ui.theme.SudvTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -18,7 +18,7 @@ class MainActivity : ComponentActivity() {
             graph.rootFactory.create(ctx)
         }
         setContent {
-            MaterialExpressiveTheme {
+            SudvTheme {
                 RootContent(root)
             }
         }

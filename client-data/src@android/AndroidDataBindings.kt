@@ -29,8 +29,4 @@ object AndroidDataBindings {
     @Provides
     @SingleIn(AppScope::class)
     fun httpClientEngine(): HttpClientEngine = OkHttp.create()
-
-    // 10.0.2.2 is the host machine as seen from the Android emulator.
-    @Provides
-    fun apiConfig(): ApiConfig = ApiConfig(baseUrl = "http://10.0.2.2:8080")
 }

@@ -29,7 +29,4 @@ object WebDataBindings {
     @Provides
     @SingleIn(AppScope::class)
     fun httpClientEngine(): HttpClientEngine = Js.create()
-
-    @Provides
-    fun apiConfig(): ApiConfig = ApiConfig(baseUrl = "http://localhost:8080")
 }

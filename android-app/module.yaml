@@ -21,9 +21,12 @@ settings:
     applicationId: ru.haykor.sudv
     versionCode: 1
     versionName: "1.0"
-    minSdk: 28
+    # Android 8.0, as stated in the report (ch. 06-07).
+    minSdk: 26
     compileSdk: 37
-    targetSdk: 37
+    # Below 37, so local network access (the SUDV server is in the company LAN) comes with INTERNET;
+    # API 37 gates it behind the ACCESS_LOCAL_NETWORK runtime permission.
+    targetSdk: 36
     resourcePackaging:
       excludes:
         - /META-INF/{AL2.0,LGPL2.1}

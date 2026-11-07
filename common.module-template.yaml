@@ -1,6 +1,12 @@
 settings:
   kotlin:
     version: 2.4.21
+    serialization:
+      # FileKit 0.17.0 needs 1.12.0; pinned here so every module resolves the same version
+      version: 1.12.0
+  compose:
+    # FileKit 0.17.0 needs 1.12.2; the version also selects the $compose.* catalog
+    version: 1.12.2
   jvm:
     jdk:
       # the server must run on JVM 21, so every module it depends on must target it too
