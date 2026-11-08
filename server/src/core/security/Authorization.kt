@@ -16,9 +16,13 @@ fun Route.authenticatedApi(block: Route.() -> Unit) {
     authenticate(JWT_AUTH_NAME, build = block)
 }
 
+/** Fails with [ErrorCode.UNAUTHORIZED] when the call has no principal; any role passes. */
+fun ApplicationCall.requireUser(): CurrentUser =
+    principal<CurrentUser>() ?: throw ApiException(ErrorCode.UNAUTHORIZED, "Требуется авторизация")
+
 /** Fails with [ErrorCode.FORBIDDEN] unless the current principal's role is one of [roles]. */
 suspend fun ApplicationCall.requireRole(vararg roles: UserRole): CurrentUser {
-    val user = principal<CurrentUser>() ?: throw ApiException(ErrorCode.UNAUTHORIZED, "Требуется авторизация")
+    val user = requireUser()
     if (user.role !in roles) throw ApiException(ErrorCode.FORBIDDEN, "Недостаточно прав")
     return user
 }

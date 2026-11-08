@@ -1,40 +1,32 @@
 product: android/app
 
-apply:
-  - ../common.module-template.yaml
-
 dependencies:
-  - //shared/domain
-  - //shared/contract
-  - $libs.metro.runtime
+  - //client-ui
+  - //client-data
   - $libs.androidx.activity.compose
-  - $compose.foundation
-  - $compose.material3
-  - $compose.preview
-  - $compose.uiTooling: runtime-only
-  - $libs.decompose
-  - $libs.decompose.extensions.compose
-  - $libs.ktor.client.core
-  - $libs.ktor.client.okhttp
-  - $libs.ktor.client.contentNegotiation
-  - $libs.ktor.serialization.kotlinx.json
+
+description: "Android app entrypoint; contains its DI graph"
+
+apply:
+  - //common.module-template.yaml
+  - //metro.module-template.yaml
 
 settings:
   compose: enabled
   junit: junit-4
   kotlin:
     serialization: enabled
-    compilerPlugins:
-      - id: dev.zacsweers.metro.compiler
-        dependency: $libs.metro.compiler
   android:
     namespace: ru.haykor.sudv.android.app
     applicationId: ru.haykor.sudv
     versionCode: 1
     versionName: "1.0"
-    minSdk: 28
+    # Android 8.0, as stated in the report (ch. 06-07).
+    minSdk: 26
     compileSdk: 37
-    targetSdk: 37
+    # Below 37, so local network access (the SUDV server is in the company LAN) comes with INTERNET;
+    # API 37 gates it behind the ACCESS_LOCAL_NETWORK runtime permission.
+    targetSdk: 36
     resourcePackaging:
       excludes:
         - /META-INF/{AL2.0,LGPL2.1}

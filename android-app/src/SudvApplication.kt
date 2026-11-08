@@ -4,7 +4,7 @@ import android.app.Application
 import dev.zacsweers.metro.createGraphFactory
 
 class SudvApplication : Application() {
-    val graph: AppGraph by lazy {
-        createGraphFactory<AppGraph.Factory>().create(this)
+    val graph by lazy {
+        createGraphFactory<AndroidAppGraph.Factory>().create(this)
     }
 }

@@ -1,0 +1,29 @@
+product:
+  type: kmp/lib
+  platforms: [ android, wasmJs ]
+
+description: "Contains common & platform implementations"
+
+dependencies:
+  - //client-domain
+  - //shared/contract
+  # Exported: these types appear in binding signatures, and the graph in an entry point has to resolve them (see AGENTS.md).
+  - $libs.datastore.core: exported
+  - $libs.datastore.preferences.core: exported
+  # Ktor
+  - $libs.ktor.client.core: exported
+  - $libs.ktor.client.contentNegotiation
+  - $libs.ktor.serialization.kotlinx.json
+  - $libs.ktor.client.encoding
+
+test-dependencies:
+  - $kotlin.test
+  - $libs.ktor.client.mock
+  - $libs.kotlinx.coroutines.test
+
+dependencies@android:
+  - $libs.ktor.client.okhttp
+
+apply:
+  - //common.module-template.yaml
+  - //metro.module-template.yaml

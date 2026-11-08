@@ -1,18 +1,15 @@
 product: jvm/app
 
-apply:
-  - ../common.module-template.yaml
-
 dependencies:
   - //shared/domain
   - //shared/contract
-  - $libs.metro.runtime
   - $libs.ktor.server.core
   - $libs.ktor.server.netty
   - $libs.ktor.server.config.yaml
   - $libs.ktor.server.contentNegotiation
   - $libs.ktor.serialization.kotlinx.json
   - $libs.ktor.server.statusPages
+  - $libs.ktor.server.cors
   - $libs.ktor.server.callLogging
   - $libs.ktor.server.auth
   - $libs.ktor.server.auth.jwt
@@ -24,6 +21,10 @@ dependencies:
   - $libs.r2dbc.postgresql
   - $libs.r2dbc.pool
   - $libs.fastexcel
+
+apply:
+  - //common.module-template.yaml
+  - //metro.module-template.yaml
 
 test-dependencies:
   - $libs.ktor.server.testHost
@@ -38,8 +39,6 @@ settings:
     applyBom: false
   kotlin:
     compilerPlugins:
-      - id: dev.zacsweers.metro.compiler
-        dependency: $libs.metro.compiler
       # infers OpenAPI paths and schemas from routing code (call.receive / call.respond)
       - id: io.ktor.ktor-compiler-plugin
         dependency: $libs.ktor.compiler.plugin

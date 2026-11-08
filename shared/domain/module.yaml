@@ -1,12 +1,16 @@
 product:
   type: kmp/lib
-  platforms: [ jvm, android ]
+  platforms: [ jvm, android, wasmJs ]
+
+description: "Domain layer shared between server & clients"
 
 dependencies:
   - $libs.kotlinx.datetime: exported
 
 test-dependencies:
   - $kotlin.test
+
+test-dependencies@jvm:
   - $kotlin.test.junit5
 
 apply:

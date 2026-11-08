@@ -1,6 +1,8 @@
 product:
   type: kmp/lib
-  platforms: [ jvm, android ]
+  platforms: [ jvm, android, wasmJs ]
+
+description: "API contract; shared between server & clients"
 
 dependencies:
   - ../domain: exported
@@ -9,6 +11,8 @@ dependencies:
 
 test-dependencies:
   - $kotlin.test
+
+test-dependencies@jvm: 
   - $kotlin.test.junit5
 
 apply:

@@ -7,9 +7,12 @@ import io.ktor.server.application.call
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
+import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import ru.haykor.sudv.server.auth.domain.IAuthService
 import ru.haykor.sudv.server.core.http.RouteRegistrar
+import ru.haykor.sudv.server.core.security.authenticatedApi
+import ru.haykor.sudv.server.core.security.requireUser
 import ru.haykor.sudv.shared.contract.ApiRoutes
 import ru.haykor.sudv.shared.contract.LoginRequest
 
@@ -21,6 +24,13 @@ class AuthRoutes(private val authService: IAuthService) : RouteRegistrar {
         post(ApiRoutes.LOGIN) {
             val request = call.receive<LoginRequest>()
             call.respond(authService.login(request))
+        }
+        authenticatedApi {
+            /** Tag: Auth */
+            get(ApiRoutes.ME) {
+                val actor = call.requireUser()
+                call.respond(authService.currentUser(actor))
+            }
         }
     }
 }

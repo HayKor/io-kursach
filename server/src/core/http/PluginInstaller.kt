@@ -15,6 +15,9 @@ interface PluginInstaller {
 enum class PluginOrder {
     // First, so every call is logged, including the ones that fail in later plugins.
     CALL_LOGGING,
+
+    // Before anything that can answer the call, so error responses carry CORS headers and the browser lets the client read them.
+    CORS,
     CONTENT_NEGOTIATION,
     STATUS_PAGES,
     AUTHENTICATION,

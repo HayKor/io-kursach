@@ -1,0 +1,11 @@
+dependencies:
+  - $libs.metro.runtime
+
+settings:
+  kotlin:
+    compilerPlugins:
+      - id: dev.zacsweers.metro.compiler
+        dependency: $libs.metro.compiler
+        options:
+          enabled: true
+          generate-contribution-providers: true

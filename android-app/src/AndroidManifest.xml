@@ -4,7 +4,8 @@
     <application
         android:name="ru.haykor.sudv.android.app.SudvApplication"
         android:theme="@style/Theme.Sudv"
-        android:label="SUDV">
+        android:label="SUDV"
+        android:networkSecurityConfig="@xml/network_security_config">
         <activity android:name="ru.haykor.sudv.android.app.MainActivity"
                   android:theme="@style/Theme.Sudv"
                   android:exported="true">

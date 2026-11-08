@@ -1,0 +1,12 @@
+product:
+  type: kmp/lib
+  platforms: [ android, wasmJs ]
+
+description: "Interfaces the UI uses to reach the server; API types come from shared:contract"
+
+dependencies:
+  - //shared/contract: exported
+  - $libs.kotlinx.coroutines.core: exported
+
+apply:
+  - //common.module-template.yaml

@@ -7,6 +7,9 @@ import kotlinx.datetime.TimeZone
 /** Typed view of `application.yaml`; built once from [ApplicationConfig]. */
 data class AppConfig(
     val timeZone: TimeZone,
+    val corsAllowedOrigins: List<String>,
+    /** Built web client to serve on `/`; `null` when the server does not serve it. */
+    val webDir: String?,
     val jwtSecret: String,
     val jwtIssuer: String,
     val jwtTtlHours: Long,
@@ -23,6 +26,8 @@ data class AppConfig(
     companion object {
         fun from(config: ApplicationConfig): AppConfig {
             val app = config.config("app")
+            val cors = config.config("cors")
+            val web = config.config("web")
             val security = config.config("security")
             val jwt = security.config("jwt")
             val files = config.config("files")
@@ -32,6 +37,11 @@ data class AppConfig(
 
             return AppConfig(
                 timeZone = TimeZone.of(app.property("timeZone").getString()),
+                corsAllowedOrigins = cors.property("allowedOrigins").getString()
+                    .split(",")
+                    .map { it.trim().removeSuffix("/") }
+                    .filter { it.isNotEmpty() },
+                webDir = web.property("dir").getString().takeIf { it.isNotBlank() },
                 jwtSecret = jwt.property("secret").getString(),
                 jwtIssuer = jwt.property("issuer").getString(),
                 jwtTtlHours = jwt.property("ttlHours").getString().toLong(),

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Address of the SUDV server. 10.0.2.2 is the host machine as seen from the Android emulator;
+         change it to the server's address in the company network before building for real devices. -->
+    <string name="api_base_url" translatable="false">http://10.0.2.2:8080</string>
+</resources>

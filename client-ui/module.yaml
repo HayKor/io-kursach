@@ -1,0 +1,38 @@
+product:
+  type: kmp/lib
+  platforms: [ android, wasmJs ]
+
+description: "Contains UI & Decompose components"  
+  
+dependencies: 
+  - //client-domain: exported
+  - $compose.foundation: exported
+  - $libs.compose.material3: exported
+  - $compose.preview
+  - $libs.decompose: exported
+  - $libs.decompose.extensions.compose: exported
+  - $libs.essenty.lifecycle.coroutines
+  - $libs.compose.material3.adaptive.navigationSuite
+  - $libs.filekit.dialogs.compose
+
+test-dependencies:
+  - $kotlin.test
+  - $libs.kotlinx.coroutines.test
+
+dependencies@android: 
+  - $compose.uiTooling
+
+apply: 
+  - //common.module-template.yaml
+  - //metro.module-template.yaml
+
+settings:
+  compose:
+    enabled: true
+    resources:
+      packageName: ru.haykor.sudv.client.ui.resources
+  kotlin:
+    serialization: enabled
+    # Web navigation (URLs, browser back/forward) is experimental in Decompose 3.5; every screen component uses it.
+    optIns:
+      - com.arkivanov.decompose.ExperimentalDecomposeApi

@@ -16,6 +16,9 @@ object ApiRoutes {
     /** `POST` [LoginRequest] → [LoginResponse]. */
     const val LOGIN = "/api/auth/login"
 
+    /** `GET` → [UserDto] of the token's owner; lets a client restore the session from a saved token. */
+    const val ME = "/api/auth/me"
+
     /** `GET` → list of [UserDto]; `POST` [CreateUserRequest] → [UserDto]. */
     const val USERS = "/api/users"
 
