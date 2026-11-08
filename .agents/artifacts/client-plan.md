@@ -154,12 +154,16 @@ client-ui/src/
 - ~~`deployment/Dockerfile`: собрать `web-app` и положить в образ; пустой `sudv-api` в `index.html`~~ — сделано в фазе 2.
 - Живая проверка: `make dev-compose`, `http://localhost:8080/` — вход, перезагрузка на `/penalties/42`, скачивание файлов.
 
+**Итог фазы 7.** Образ, собранный `make dev-compose` после фазы 6, содержит свежие сервер и веб-клиент. Проверено запросами: `/`, `/penalties/42`, `/reports/archive`, `/employees/7/edit` отдают `index.html` (с `base href`, `viewport` и пустым `sudv-api`); `.mjs` — `text/javascript`, `.wasm` — `application/wasm`; неизвестный `/api/...` — 404, а не страница; вход через API работает. В томе вложений есть файл, загруженный и затем скачанный пользователем через приложение, — путь «загрузка → том → скачивание» в Docker пройден. Замечено: `web-app.wasm` (release) — около 15 МБ плюс `skiko.wasm` 8,6 МБ, сервер отдаёт их без сжатия; включение `Compression` в Ktor уменьшило бы первую загрузку — не сделано, предложено отдельно.
+
 ### Фаза 8. Отчёт
 
 - Гл. 05–07: веб-клиент, модули `client-*`, `android-app`, `web-app`; таблица программных средств (Compose Multiplatform, Decompose, Metro, DataStore); артефакты и узлы развёртывания.
 - Диаграммы draw.io: компоненты и развёртывание.
 - Закрыть известные расхождения из AGENTS.md: `android`/`android-app`, JDBC/R2DBC, `application.conf`/`application.yaml`.
 - Сборка `cd docs && make`, сверка формулировок по правилу «каждое слово защищать».
+
+**Итог фазы 8.** Гл. 01, 05–07: клиентское приложение в двух вариантах (мобильное и веб-клиент из одного кода), модули `client-*`, `android-app`, `web-app`; правило «`client-ui` не зависит от `client-data`»; таблица программных средств (Compose Multiplatform, Decompose, DataStore, Metro, Exposed + R2DBC, браузер с WebAssembly GC) с обоснованием Compose Multiplatform и R2DBC; узел «Рабочий компьютер», каталог `web/` в контейнере JVM, настройки в `.env` вместо `application.conf`; JDBC → R2DBC. Диаграммы 12, 13, 15 обновлены. Осталось расхождение HTTPS 443 / локальный HTTP 8080 (записано в AGENTS.md).
 
 ## 6. Риски, которые проверяем в начале
 
