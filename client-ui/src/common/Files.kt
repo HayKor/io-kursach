@@ -1,6 +1,11 @@
 package ru.haykor.sudv.client.ui.common
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import io.github.vinceglb.filekit.dialogs.FileKitType
 import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
 import io.github.vinceglb.filekit.name
@@ -42,4 +47,20 @@ fun rememberFilePicker(extensions: Set<String>, onPicked: (PickedFile) -> Unit):
         if (file != null) onPicked(PickedFile(file.name, file.size()) { file.readBytes() })
     }
     return { launcher.launch() }
+}
+
+/**
+ * Hands a component's [delivery] to the platform once and reports back through [onDelivered]. Returns the platform's
+ * error (e.g. no app to open a PDF) until the next delivery, to be shown next to the component's own errors.
+ */
+@Composable
+fun deliverFile(delivery: FileDelivery?, onDelivered: () -> Unit): String? {
+    val output = rememberFileOutput()
+    var error by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(delivery) {
+        if (delivery == null) return@LaunchedEffect
+        error = output.deliver(delivery)
+        onDelivered()
+    }
+    return error
 }

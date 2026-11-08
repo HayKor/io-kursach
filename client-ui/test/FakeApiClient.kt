@@ -21,6 +21,7 @@ import ru.haykor.sudv.shared.contract.PenaltyFilter
 import ru.haykor.sudv.shared.contract.PenaltyRemovalDto
 import ru.haykor.sudv.shared.contract.ReportDto
 import ru.haykor.sudv.shared.contract.SummaryReportDto
+import ru.haykor.sudv.shared.contract.SummaryRowDto
 import ru.haykor.sudv.shared.contract.UserDto
 import ru.haykor.sudv.shared.domain.AttachmentId
 import ru.haykor.sudv.shared.domain.DepartmentId
@@ -93,6 +94,12 @@ fun attachment(id: Long, fileName: String = "Приказ.pdf") = AttachmentDto(
     uploadedAt = Instant.parse("2026-11-07T10:00:00Z"),
 )
 
+fun report(id: Long, from: LocalDate, to: LocalDate, format: ReportFormat = ReportFormat.XLSX, createdAt: String = "2026-11-08T10:00:00Z") =
+    ReportDto(ReportId(id), from, to, listOf(IT_DEPARTMENT, HR_DEPARTMENT), format, Instant.parse(createdAt))
+
+/** Arguments of one [IApiClient.summaryReport] call. */
+data class SummaryQuery(val from: LocalDate, val to: LocalDate, val departmentIds: List<DepartmentId>)
+
 /** Arguments of one [IApiClient.employees] call. */
 data class EmployeesQuery(val query: String?, val departmentId: DepartmentId?, val includeArchived: Boolean)
 
@@ -141,6 +148,24 @@ class FakeApiClient(signedIn: Boolean) : IApiClient {
     var onDownload: suspend (AttachmentId) -> FileContent = { FileContent("Приказ.pdf", "application/pdf", PDF_BYTES) }
     val deletedAttachments = mutableListOf<AttachmentId>()
     var onDeleteAttachment: suspend (AttachmentId) -> Unit = {}
+
+    val employeeCardCalls = mutableListOf<EmployeeId>()
+    var onEmployeeCard: suspend (EmployeeId) -> EmployeeCardDto = {
+        EmployeeCardDto(employee(it.value), listOf(penalty(1, PenaltyStatus.EXPIRED), penalty(2)))
+    }
+    val cardExports = mutableListOf<Pair<EmployeeId, ReportFormat>>()
+    val penaltyExports = mutableListOf<Pair<PenaltyFilter, ReportFormat>>()
+    var onExportPenalties: suspend (PenaltyFilter, ReportFormat) -> FileContent = { _, format ->
+        FileContent("penalties.${format.name.lowercase()}", "application/octet-stream", byteArrayOf(1))
+    }
+    val summaryQueries = mutableListOf<SummaryQuery>()
+    var onSummary: suspend (SummaryQuery) -> SummaryReportDto = { query ->
+        SummaryReportDto(query.from, query.to, listOf(SummaryRowDto(IT_DEPARTMENT, 2, 1), SummaryRowDto(HR_DEPARTMENT, 0, 3)))
+    }
+    var reportsCalls = 0
+    var onReports: suspend () -> List<ReportDto> = { emptyList() }
+    val createdReports = mutableListOf<CreateReportRequest>()
+    val reportDownloads = mutableListOf<ReportId>()
 
     override suspend fun login(request: LoginRequest): LoginResponse {
         val user = onLogin(request)
@@ -239,13 +264,39 @@ class FakeApiClient(signedIn: Boolean) : IApiClient {
         onDeleteAttachment(id)
     }
 
-    override suspend fun employeeCard(id: EmployeeId): EmployeeCardDto = unused()
-    override suspend fun exportEmployeeCard(id: EmployeeId, format: ReportFormat): FileContent = unused()
-    override suspend fun exportPenalties(filter: PenaltyFilter, format: ReportFormat): FileContent = unused()
-    override suspend fun summaryReport(periodFrom: LocalDate, periodTo: LocalDate, departmentIds: List<DepartmentId>): SummaryReportDto = unused()
-    override suspend fun reports(): List<ReportDto> = unused()
-    override suspend fun createReport(request: CreateReportRequest): ReportDto = unused()
-    override suspend fun downloadReport(id: ReportId): FileContent = unused()
+    override suspend fun employeeCard(id: EmployeeId): EmployeeCardDto {
+        employeeCardCalls += id
+        return onEmployeeCard(id)
+    }
 
-    private fun unused(): Nothing = error("not used by these tests")
+    override suspend fun exportEmployeeCard(id: EmployeeId, format: ReportFormat): FileContent {
+        cardExports += id to format
+        return FileContent("card_EMP-${id.value}.${format.name.lowercase()}", "application/octet-stream", byteArrayOf(1))
+    }
+
+    override suspend fun exportPenalties(filter: PenaltyFilter, format: ReportFormat): FileContent {
+        penaltyExports += filter to format
+        return onExportPenalties(filter, format)
+    }
+
+    override suspend fun summaryReport(periodFrom: LocalDate, periodTo: LocalDate, departmentIds: List<DepartmentId>): SummaryReportDto {
+        val query = SummaryQuery(periodFrom, periodTo, departmentIds)
+        summaryQueries += query
+        return onSummary(query)
+    }
+
+    override suspend fun reports(): List<ReportDto> {
+        reportsCalls++
+        return onReports()
+    }
+
+    override suspend fun createReport(request: CreateReportRequest): ReportDto {
+        createdReports += request
+        return report(30, request.periodFrom, request.periodTo, request.format)
+    }
+
+    override suspend fun downloadReport(id: ReportId): FileContent {
+        reportDownloads += id
+        return FileContent("summary_${id.value}.xlsx", "application/octet-stream", byteArrayOf(1))
+    }
 }

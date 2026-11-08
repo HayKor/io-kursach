@@ -15,6 +15,7 @@ import ru.haykor.sudv.client.domain.IApiClient
 import ru.haykor.sudv.client.ui.DeepLink
 import ru.haykor.sudv.client.ui.employees.DefaultEmployeesComponent
 import ru.haykor.sudv.client.ui.penalties.DefaultPenaltiesComponent
+import ru.haykor.sudv.client.ui.reports.DefaultReportsComponent
 import ru.haykor.sudv.client.ui.users.DefaultUsersComponent
 import ru.haykor.sudv.shared.contract.UserDto
 
@@ -72,8 +73,8 @@ class DefaultMainComponent(
         return when (section) {
             Section.PENALTIES -> DefaultPenaltiesComponent(context, apiClient, user.role, deepLink)
             Section.EMPLOYEES -> DefaultEmployeesComponent(context, apiClient, user.role, deepLink)
+            Section.REPORTS -> DefaultReportsComponent(context, apiClient, deepLink)
             Section.USERS -> DefaultUsersComponent(context, apiClient, user.id, deepLink)
-            else -> PlaceholderSectionComponent(context, section)
         }
     }
 

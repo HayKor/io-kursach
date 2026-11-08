@@ -2,7 +2,6 @@ package ru.haykor.sudv.client.ui.main
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -20,7 +19,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.arkivanov.decompose.extensions.compose.stack.Children
@@ -31,6 +29,8 @@ import ru.haykor.sudv.client.ui.common.fullName
 import ru.haykor.sudv.client.ui.employees.EmployeesComponent
 import ru.haykor.sudv.client.ui.penalties.PenaltiesComponent
 import ru.haykor.sudv.client.ui.penalties.PenaltiesContent
+import ru.haykor.sudv.client.ui.reports.ReportsComponent
+import ru.haykor.sudv.client.ui.reports.ReportsContent
 import ru.haykor.sudv.client.ui.employees.EmployeesContent
 import ru.haykor.sudv.client.ui.users.UsersComponent
 import ru.haykor.sudv.client.ui.users.UsersContent
@@ -113,9 +113,9 @@ private fun SectionContent(component: SectionComponent) {
         is PenaltiesComponent -> PenaltiesContent(component)
         is EmployeesComponent -> EmployeesContent(component)
         is UsersComponent -> UsersContent(component)
-        else -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Раздел «${component.section.title}» в разработке", style = MaterialTheme.typography.bodyLarge)
-        }
+        is ReportsComponent -> ReportsContent(component)
+        // Not sealed: sections live in their own packages. Every one is listed above, so this is a programming error.
+        else -> error("No content for section ${component.section}")
     }
 }
 

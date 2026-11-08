@@ -9,7 +9,10 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
+import ru.haykor.sudv.client.domain.ApiClientException
 import ru.haykor.sudv.client.domain.IApiClient
+import ru.haykor.sudv.client.ui.common.FileAction
+import ru.haykor.sudv.client.ui.common.FileDelivery
 import ru.haykor.sudv.client.ui.common.LoadState
 import ru.haykor.sudv.client.ui.common.load
 import ru.haykor.sudv.client.ui.employees.SEARCH_DEBOUNCE_MS
@@ -23,6 +26,7 @@ import ru.haykor.sudv.shared.contract.SortDirection
 import ru.haykor.sudv.shared.domain.DepartmentId
 import ru.haykor.sudv.shared.domain.PenaltyId
 import ru.haykor.sudv.shared.domain.PenaltyStatus
+import ru.haykor.sudv.shared.domain.ReportFormat
 import ru.haykor.sudv.shared.domain.UserRole
 
 /** The registry: penalties filtered and sorted by the server. */
@@ -41,6 +45,10 @@ interface PenaltyListComponent {
     fun onPenaltyClick(id: PenaltyId)
     fun onCreateClick()
 
+    /** Downloads the registry with the shown filters and sort, as on the screen. */
+    fun onExport(format: ReportFormat)
+    fun onDelivered()
+
     /** Called by the section after a penalty was registered or removed. */
     fun reload()
 
@@ -58,6 +66,10 @@ interface PenaltyListComponent {
         val penalties: LoadState<List<PenaltyDto>> = LoadState.Loading,
         val canFilterByDepartment: Boolean = false,
         val canCreate: Boolean = false,
+        val isExporting: Boolean = false,
+        val exportError: String? = null,
+        /** The exported file waiting for the platform to save it. */
+        val delivery: FileDelivery? = null,
     ) {
         /** What goes to the server: the shown filters, the name trimmed and an empty one left out. */
         val filter: PenaltyFilter
@@ -126,6 +138,22 @@ class DefaultPenaltyListComponent(
     override fun onPenaltyClick(id: PenaltyId) = onOpen(id)
 
     override fun onCreateClick() = onCreate()
+
+    override fun onExport(format: ReportFormat) {
+        val shown = _state.value
+        if (shown.isExporting) return
+        _state.update { it.copy(isExporting = true, exportError = null) }
+        scope.launch {
+            try {
+                val file = apiClient.exportPenalties(shown.filter, format)
+                _state.update { it.copy(isExporting = false, delivery = FileDelivery(file, FileAction.SAVE)) }
+            } catch (e: ApiClientException) {
+                _state.update { it.copy(isExporting = false, exportError = e.message) }
+            }
+        }
+    }
+
+    override fun onDelivered() = _state.update { it.copy(delivery = null) }
 
     override fun reload() = reload(debounce = false)
 

@@ -16,15 +16,18 @@ import ru.haykor.sudv.client.ui.DeepLink
 import ru.haykor.sudv.client.ui.EmployeesQuery
 import ru.haykor.sudv.client.ui.FakeApiClient
 import ru.haykor.sudv.client.ui.HR_DEPARTMENT
+import ru.haykor.sudv.client.ui.common.FileAction
 import ru.haykor.sudv.client.ui.common.LoadState
 import ru.haykor.sudv.shared.contract.ErrorCode
 import ru.haykor.sudv.shared.domain.EmployeeId
+import ru.haykor.sudv.shared.domain.ReportFormat
 import ru.haykor.sudv.shared.domain.UserRole
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -187,14 +190,15 @@ class EmployeesComponentTest {
         val section = section(deepLink = "/7/edit")
         val form = assertIs<EmployeesComponent.Child.Form>(section.active).component
         assertEquals("EMP-7", form.state.value.personnelNumber)
-        val cardLoads = api.employeeCalls.count { it == EmployeeId(7) }
+        // HR sees penalties, so the card comes with the personal card in one request.
+        val cardLoads = api.employeeCardCalls.count { it == EmployeeId(7) }
 
         form.onLastNameChange("Новикова")
         form.onSave()
 
         assertEquals("Новикова", api.updatedEmployees.single().second.lastName)
         assertIs<EmployeesComponent.Child.Details>(section.active)
-        assertEquals(cardLoads + 1, api.employeeCalls.count { it == EmployeeId(7) })
+        assertEquals(cardLoads + 1, api.employeeCardCalls.count { it == EmployeeId(7) })
     }
 
     @Test
@@ -211,5 +215,40 @@ class EmployeesComponentTest {
         assertEquals(listOf(EmployeeId(7)), api.archivedEmployees)
         assertFalse(card.state.value.canArchive)
         assertEquals(listLoads + 1, api.employeesQueries.size)
+    }
+
+    @Test
+    fun hrAndManagerSeeThePersonalCard() = runTest {
+        for (role in listOf(UserRole.HR, UserRole.MANAGER)) {
+            val details = assertIs<EmployeesComponent.Child.Details>(section(role, "/7").active).component
+
+            assertEquals(EmployeeId(7), (details.state.value.employee as LoadState.Loaded).data.id)
+            assertEquals(2, details.state.value.penalties?.size)
+        }
+        assertEquals(listOf(EmployeeId(7), EmployeeId(7)), api.employeeCardCalls)
+        assertTrue(api.employeeCalls.isEmpty(), "one request per card, not two")
+    }
+
+    @Test
+    fun adminSeesNoPenalties() = runTest {
+        val details = assertIs<EmployeesComponent.Child.Details>(section(UserRole.ADMIN, "/7").active).component
+
+        assertNull(details.state.value.penalties)
+        assertEquals(listOf(EmployeeId(7)), api.employeeCalls)
+        assertTrue(api.employeeCardCalls.isEmpty())
+    }
+
+    @Test
+    fun personalCardIsExportedForTheShownEmployee() = runTest {
+        val details = assertIs<EmployeesComponent.Child.Details>(section(UserRole.MANAGER, "/7").active).component
+
+        details.onExport(ReportFormat.CSV)
+
+        assertEquals(listOf(EmployeeId(7) to ReportFormat.CSV), api.cardExports)
+        val delivery = details.state.value.delivery!!
+        assertEquals("card_EMP-7.csv", delivery.file.fileName)
+        assertEquals(FileAction.SAVE, delivery.action)
+        details.onDelivered()
+        assertNull(details.state.value.delivery)
     }
 }

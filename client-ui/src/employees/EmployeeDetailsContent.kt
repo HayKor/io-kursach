@@ -2,6 +2,7 @@ package ru.haykor.sudv.client.ui.employees
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -13,11 +14,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import org.jetbrains.compose.resources.painterResource
 import ru.haykor.sudv.client.ui.common.ConfirmDialog
+import ru.haykor.sudv.client.ui.common.FormatButton
+import ru.haykor.sudv.client.ui.common.StatusLabel
+import ru.haykor.sudv.client.ui.common.deliverFile
+import ru.haykor.sudv.client.ui.common.display
 import ru.haykor.sudv.client.ui.common.LoadState
 import ru.haykor.sudv.client.ui.common.LoadStateContent
 import ru.haykor.sudv.client.ui.common.PaneHeader
@@ -27,11 +33,15 @@ import ru.haykor.sudv.client.ui.resources.ic_arrow_back
 import ru.haykor.sudv.client.ui.resources.ic_close
 import ru.haykor.sudv.client.ui.resources.ic_edit
 import ru.haykor.sudv.client.ui.resources.ic_inventory_2
+import ru.haykor.sudv.shared.contract.PenaltyDto
+import ru.haykor.sudv.shared.domain.ReportFormat
+import ru.haykor.sudv.shared.domain.displayName
 
 /** [twoPane]: the list is visible next to the card, so the card closes instead of going back. */
 @Composable
 fun EmployeeDetailsContent(component: EmployeeDetailsComponent, twoPane: Boolean, modifier: Modifier = Modifier) {
     val state by component.state.subscribeAsState()
+    val deliveryError = deliverFile(state.delivery, component::onDelivered).takeIf { state.delivery == null }
     val employee = (state.employee as? LoadState.Loaded)?.data
     Column(modifier.fillMaxSize()) {
         PaneHeader(
@@ -57,7 +67,7 @@ fun EmployeeDetailsContent(component: EmployeeDetailsComponent, twoPane: Boolean
                 Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                state.actionError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                (state.actionError ?: deliveryError)?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 if (loaded.isArchived) {
                     Text(
                         "В архиве: не показывается в списках, история взысканий сохранена",
@@ -68,6 +78,9 @@ fun EmployeeDetailsContent(component: EmployeeDetailsComponent, twoPane: Boolean
                 Field("Табельный номер", loaded.personnelNumber)
                 Field("Должность", loaded.position)
                 Field("Подразделение", loaded.department.name)
+                state.penalties?.let { penalties ->
+                    PersonalCard(penalties, state.isExporting, component::onExport)
+                }
             }
         }
     }
@@ -79,6 +92,34 @@ fun EmployeeDetailsContent(component: EmployeeDetailsComponent, twoPane: Boolean
             onConfirm = component::onArchiveConfirm,
             onDismiss = component::onArchiveDismiss,
         )
+    }
+}
+
+/** The personal card from the report (ch. 02): every penalty of the employee, oldest first, with its status. */
+@Composable
+private fun PersonalCard(penalties: List<PenaltyDto>, isExporting: Boolean, onExport: (ReportFormat) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text("Персональная карточка", style = MaterialTheme.typography.titleMedium)
+        if (penalties.isEmpty()) {
+            Text("Взысканий нет", style = MaterialTheme.typography.bodyLarge)
+        }
+        penalties.forEach { penalty ->
+            Row(verticalAlignment = Alignment.Top) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        "${penalty.type.displayName} от ${penalty.orderDate.display()}",
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                    Text(
+                        "Приказ № ${penalty.orderNumber} · нарушение ${penalty.violationDate.display()} · ${penalty.description}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                StatusLabel(penalty.status, Modifier.padding(start = 8.dp))
+            }
+        }
+        FormatButton("Выгрузить карточку", onSelect = onExport, busy = isExporting)
     }
 }
 

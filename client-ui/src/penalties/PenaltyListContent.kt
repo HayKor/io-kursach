@@ -10,9 +10,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Badge
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -42,13 +45,18 @@ import org.jetbrains.compose.resources.painterResource
 import ru.haykor.sudv.client.ui.common.DateField
 import ru.haykor.sudv.client.ui.common.DepartmentField
 import ru.haykor.sudv.client.ui.common.LoadStateContent
+import ru.haykor.sudv.client.ui.common.StatusLabel
+import ru.haykor.sudv.client.ui.common.deliverFile
 import ru.haykor.sudv.client.ui.common.display
+import ru.haykor.sudv.client.ui.common.label
 import ru.haykor.sudv.client.ui.common.fullName
 import ru.haykor.sudv.client.ui.resources.Res
 import ru.haykor.sudv.client.ui.resources.ic_add
 import ru.haykor.sudv.client.ui.resources.ic_arrow_downward
 import ru.haykor.sudv.client.ui.resources.ic_arrow_upward
+import ru.haykor.sudv.client.ui.resources.ic_download
 import ru.haykor.sudv.client.ui.resources.ic_filter_list
+import ru.haykor.sudv.client.ui.resources.ic_more_vert
 import ru.haykor.sudv.client.ui.resources.ic_refresh
 import ru.haykor.sudv.client.ui.resources.ic_search
 import ru.haykor.sudv.shared.contract.PenaltyDto
@@ -56,11 +64,13 @@ import ru.haykor.sudv.shared.contract.PenaltySortField
 import ru.haykor.sudv.shared.contract.SortDirection
 import ru.haykor.sudv.shared.domain.PenaltyId
 import ru.haykor.sudv.shared.domain.PenaltyStatus
+import ru.haykor.sudv.shared.domain.ReportFormat
 import ru.haykor.sudv.shared.domain.displayName
 
 @Composable
 fun PenaltyListContent(component: PenaltyListComponent, selectedId: PenaltyId?, modifier: Modifier = Modifier) {
     val state by component.state.subscribeAsState()
+    val exportDeliveryError = deliverFile(state.delivery, component::onDelivered).takeIf { state.delivery == null }
     Column(modifier.fillMaxSize()) {
         Row(
             Modifier.padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
@@ -82,9 +92,13 @@ fun PenaltyListContent(component: PenaltyListComponent, selectedId: PenaltyId?, 
                     )
                 }
             }
-            IconButton(onClick = component::onRefresh) {
-                Icon(painterResource(Res.drawable.ic_refresh), contentDescription = "Обновить")
-            }
+            ListMenu(state.isExporting, component)
+        }
+        state.exportError?.let {
+            Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(horizontal = 16.dp))
+        }
+        exportDeliveryError?.let {
+            Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(horizontal = 16.dp))
         }
         if (state.filtersShown) {
             Filters(state, component)
@@ -113,6 +127,41 @@ fun PenaltyListContent(component: PenaltyListComponent, selectedId: PenaltyId?, 
                     icon = { Icon(painterResource(Res.drawable.ic_add), contentDescription = null) },
                     text = { Text("Зарегистрировать") },
                     modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
+                )
+            }
+        }
+    }
+}
+
+/** Refresh and export share one menu: a phone has room for only so many icons next to the search field. */
+@Composable
+private fun ListMenu(isExporting: Boolean, component: PenaltyListComponent) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        if (isExporting) {
+            CircularProgressIndicator(Modifier.padding(12.dp).size(24.dp))
+        } else {
+            IconButton(onClick = { expanded = true }) {
+                Icon(painterResource(Res.drawable.ic_more_vert), contentDescription = "Ещё")
+            }
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(
+                text = { Text("Обновить") },
+                leadingIcon = { Icon(painterResource(Res.drawable.ic_refresh), contentDescription = null) },
+                onClick = {
+                    expanded = false
+                    component.onRefresh()
+                },
+            )
+            ReportFormat.entries.forEach { format ->
+                DropdownMenuItem(
+                    text = { Text("Выгрузить в ${format.label}") },
+                    leadingIcon = { Icon(painterResource(Res.drawable.ic_download), contentDescription = null) },
+                    onClick = {
+                        expanded = false
+                        component.onExport(format)
+                    },
                 )
             }
         }

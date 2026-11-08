@@ -26,6 +26,7 @@ import ru.haykor.sudv.client.ui.common.DateField
 import ru.haykor.sudv.client.ui.common.LoadState
 import ru.haykor.sudv.client.ui.common.LoadStateContent
 import ru.haykor.sudv.client.ui.common.PaneHeader
+import ru.haykor.sudv.client.ui.common.StatusLabel
 import ru.haykor.sudv.client.ui.common.days
 import ru.haykor.sudv.client.ui.common.display
 import ru.haykor.sudv.client.ui.common.fullName

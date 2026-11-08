@@ -15,11 +15,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -27,6 +23,7 @@ import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import org.jetbrains.compose.resources.painterResource
 import ru.haykor.sudv.client.ui.common.ConfirmDialog
 import ru.haykor.sudv.client.ui.common.FileAction
+import ru.haykor.sudv.client.ui.common.deliverFile
 import ru.haykor.sudv.client.ui.common.display
 import ru.haykor.sudv.client.ui.common.fileSize
 import ru.haykor.sudv.client.ui.common.rememberFileOutput
@@ -44,17 +41,8 @@ import ru.haykor.sudv.shared.domain.AttachmentRules
 fun AttachmentsContent(component: AttachmentsComponent, modifier: Modifier = Modifier) {
     val state by component.state.subscribeAsState()
     val output = rememberFileOutput()
-    // An error from the platform (e.g. no app to open a PDF) is shown next to the component's own errors.
-    var deliveryError by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(state.delivery) {
-        val delivery = state.delivery ?: return@LaunchedEffect
-        deliveryError = output.deliver(delivery)
-        component.onDelivered()
-    }
-    val pick = rememberFilePicker(AttachmentRules.contentTypesByExtension.keys) {
-        deliveryError = null
-        component.onFilePicked(it)
-    }
+    val deliveryError = deliverFile(state.delivery, component::onDelivered)
+    val pick = rememberFilePicker(AttachmentRules.contentTypesByExtension.keys, component::onFilePicked)
 
     Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text("Вложения", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -65,14 +53,11 @@ fun AttachmentsContent(component: AttachmentsComponent, modifier: Modifier = Mod
                 busy = attachment.id == state.busyId,
                 canOpen = output.canOpen,
                 canDelete = state.canEdit,
-                onAction = { action ->
-                    deliveryError = null
-                    component.onDownloadClick(attachment.id, action)
-                },
+                onAction = { action -> component.onDownloadClick(attachment.id, action) },
                 onDelete = { component.onDeleteClick(attachment.id) },
             )
         }
-        (state.error ?: deliveryError)?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        (state.error ?: deliveryError.takeIf { state.delivery == null })?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         if (state.canEdit) {
             OutlinedButton(onClick = pick, enabled = !state.isUploading) {
                 if (state.isUploading) {

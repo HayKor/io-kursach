@@ -30,6 +30,7 @@ import ru.haykor.sudv.shared.domain.EmployeeId
 import ru.haykor.sudv.shared.domain.PenaltyId
 import ru.haykor.sudv.shared.domain.PenaltyStatus
 import ru.haykor.sudv.shared.domain.PenaltyType
+import ru.haykor.sudv.shared.domain.ReportFormat
 import ru.haykor.sudv.shared.domain.UserRole
 import kotlin.test.AfterTest
 import kotlin.test.Test
@@ -292,5 +293,31 @@ class PenaltiesComponentTest {
         assertEquals(PenaltyId(77), component.details.penaltyId)
         assertEquals(2, component.stack.value.items.size)
         assertEquals(1, api.penaltyFilters.size, "the registry was reloaded")
+    }
+
+    @Test
+    fun registryExportUsesTheShownFiltersAndSort() = runTest {
+        val list = section(UserRole.MANAGER).list
+        list.onStatusChange(PenaltyStatus.ACTIVE)
+        list.onEmployeeNameChange(" Попов ")
+        list.onSortChange(PenaltySortField.EMPLOYEE_NAME)
+
+        list.onExport(ReportFormat.XLSX)
+
+        assertEquals(listOf(list.state.value.filter to ReportFormat.XLSX), api.penaltyExports)
+        assertEquals(PenaltyFilter(status = PenaltyStatus.ACTIVE, employeeName = "Попов", sort = PenaltySortField.EMPLOYEE_NAME), api.penaltyExports.single().first)
+        assertEquals("penalties.xlsx", list.state.value.delivery?.file?.fileName)
+        assertFalse(list.state.value.isExporting)
+    }
+
+    @Test
+    fun failedExportIsShown() = runTest {
+        api.onExportPenalties = { _, _ -> throw ApiException(ErrorCode.INTERNAL_ERROR, "Внутренняя ошибка сервера") }
+        val list = section().list
+
+        list.onExport(ReportFormat.CSV)
+
+        assertEquals("Внутренняя ошибка сервера", list.state.value.exportError)
+        assertNull(list.state.value.delivery)
     }
 }

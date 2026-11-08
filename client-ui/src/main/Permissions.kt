@@ -14,3 +14,9 @@ val UserRole.seesAllDepartments: Boolean get() = this != UserRole.MANAGER
 
 /** Registering and early removal; MANAGER only reads penalties of their department. */
 val UserRole.canManagePenalties: Boolean get() = this == UserRole.HR
+
+/** Penalties, attachments and personal cards; ADMIN manages accounts and employees only. */
+val UserRole.canSeePenalties: Boolean get() = this == UserRole.HR || this == UserRole.MANAGER
+
+/** The summary report and its archive. */
+val UserRole.canUseReports: Boolean get() = this == UserRole.HR
